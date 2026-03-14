@@ -1,0 +1,54 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+def _require(key: str) -> str:
+    value = os.getenv(key)
+    if not value:
+        raise RuntimeError(f"Missing required environment variable: {key}")
+    return value
+
+
+ANTHROPIC_API_KEY: str = _require("ANTHROPIC_API_KEY")
+ALPHA_VANTAGE_API_KEY: str = _require("ALPHA_VANTAGE_API_KEY")
+NEWS_API_KEY: str = _require("NEWS_API_KEY")
+TELEGRAM_BOT_TOKEN: str = _require("TELEGRAM_BOT_TOKEN")
+SUPABASE_URL: str = _require("SUPABASE_URL")
+SUPABASE_KEY: str = _require("SUPABASE_KEY")
+
+# Claude model
+CLAUDE_MODEL: str = "claude-sonnet-4-6"
+
+# Cache TTL in minutes
+CACHE_TTL_MINUTES: int = 30
+
+# Assets configuration
+ASSETS: dict = {
+    "EURUSD": {
+        "name": "EUR/USD",
+        "type": "fx",
+        "news_query": "euro dollar ECB Fed",
+    },
+    "XAUUSD": {
+        "name": "Gold XAU/USD",
+        "type": "commodity",
+        "news_query": "gold XAU fed dollar inflation",
+    },
+    "BRENT": {
+        "name": "Brent Crude",
+        "type": "commodity",
+        "news_query": "brent crude oil OPEC",
+    },
+    "SPX": {
+        "name": "S&P 500",
+        "type": "index",
+        "news_query": "S&P 500 fed earnings market",
+    },
+    "BTC": {
+        "name": "Bitcoin BTC",
+        "type": "crypto",
+        "news_query": "bitcoin crypto ETF",
+    },
+}
