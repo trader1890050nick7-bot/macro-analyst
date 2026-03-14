@@ -84,11 +84,19 @@ async def analyze_sentiment(
         raw = response.content[0].text.strip()
 
         # Strip markdown code fences if present
-        if raw.startswith("```"):
+        if "```" in raw:
             raw = raw.split("```")[1]
             if raw.startswith("json"):
                 raw = raw[4:]
             raw = raw.strip()
+
+        # Extract JSON object robustly — find first { ... }
+        start = raw.find("{")
+        end = raw.rfind("}") + 1
+        if start == -1 or end == 0:
+            logger.error("No JSON object found in Claude response for %s: %s", asset, raw[:200])
+            return None
+        raw = raw[start:end]
 
         data = json.loads(raw)
         return Sentiment(
