@@ -1,4 +1,4 @@
-"""Format data into Telegram-friendly messages (≤4096 chars each)."""
+"""Format data into Telegram-friendly HTML messages (≤4096 chars each)."""
 
 from db.models import Sentiment, Brief, Idea
 
@@ -27,25 +27,24 @@ ASSET_NAMES = {
     "EURUSD": "EUR/USD",
     "XAUUSD": "Gold XAU/USD",
     "BRENT": "Brent Crude",
-    "SPX": "S&P 500",
+    "SPX": "S&amp;P 500",
     "BTC": "Bitcoin BTC",
 }
 
 
-def _truncate(text: str, max_len: int = TELEGRAM_MAX) -> str:
-    if len(text) <= max_len:
-        return text
-    return text[: max_len - 3] + "..."
+def _h(text: str) -> str:
+    """Escape HTML special chars."""
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-# ---- Welcome message --------------------------------------------------
+# ---- Welcome ----------------------------------------------------------
 
 def format_welcome() -> str:
     return (
-        "👋 *Welcome to Macro Market Analyst Bot!*\n\n"
+        "👋 <b>Welcome to Macro Market Analyst Bot!</b>\n\n"
         "I provide daily AI-powered macro analysis covering:\n"
-        "💱 EUR/USD • 🥇 Gold • 🛢️ Brent • 📊 S\\&P 500 • ₿ BTC\n\n"
-        "*Commands:*\n"
+        "💱 EUR/USD • 🥇 Gold • 🛢️ Brent • 📊 S&amp;P 500 • ₿ BTC\n\n"
+        "<b>Commands:</b>\n"
         "/brief — Today's macro brief\n"
         "/sentiment — Live sentiment for all 5 assets\n"
         "/ideas — Today's 3 trading ideas\n"
@@ -54,21 +53,21 @@ def format_welcome() -> str:
     )
 
 
-# ---- Help message -----------------------------------------------------
+# ---- Help -------------------------------------------------------------
 
 def format_help() -> str:
     return (
-        "📖 *Available Commands*\n\n"
-        "/start — Welcome message & subscription info\n"
-        "/brief — Today's daily macro brief \\(400\\-500 words\\)\n"
+        "📖 <b>Available Commands</b>\n\n"
+        "/start — Welcome message &amp; subscription info\n"
+        "/brief — Today's daily macro brief (400-500 words)\n"
         "/sentiment — Sentiment cards for all 5 assets\n"
         "/ideas — Today's 3 trading ideas with entry/SL/TP\n"
         "/help — This help message\n\n"
-        "⏰ *Schedule \\(UTC\\)*\n"
-        "• Every 30 min: Price \\& sentiment update\n"
+        "⏰ <b>Schedule (UTC)</b>\n"
+        "• Every 30 min: Price &amp; sentiment update\n"
         "• 07:00 — Daily macro brief generated\n"
         "• 07:30 — Trading ideas generated\n"
-        "• 07:35 — Brief \\& ideas delivered to subscribers"
+        "• 07:35 — Brief &amp; ideas delivered to subscribers"
     )
 
 
@@ -80,23 +79,21 @@ def format_sentiment_card(s: Sentiment) -> str:
     asset_name = ASSET_NAMES.get(s.asset, s.asset)
     bar = _score_bar(s.score)
     return (
-        f"{asset_emoji} *{asset_name}*\n"
-        f"{emoji} *{s.sentiment.upper()}* — Score: {s.score}/100\n"
+        f"{asset_emoji} <b>{asset_name}</b>\n"
+        f"{emoji} <b>{s.sentiment.upper()}</b> — Score: {s.score}/100\n"
         f"{bar}\n"
-        f"_{s.reasoning}_"
+        f"<i>{_h(s.reasoning)}</i>"
     )
 
 
 def format_all_sentiments(sentiments: list[Sentiment]) -> list[str]:
-    """Return list of messages (split if needed to stay under 4096 chars)."""
     if not sentiments:
-        return ["⚠️ No sentiment data available yet\\. Try again in a few minutes\\."]
+        return ["⚠️ No sentiment data available yet. Try again in a few minutes."]
 
-    header = "📡 *Live Market Sentiments*\n\n"
+    header = "📡 <b>Live Market Sentiments</b>\n\n"
     cards = [format_sentiment_card(s) for s in sentiments]
     body = "\n\n".join(cards)
-    full = header + body
-    return _split_message(full)
+    return _split_message(header + body)
 
 
 def _score_bar(score: int, width: int = 10) -> str:
@@ -107,10 +104,8 @@ def _score_bar(score: int, width: int = 10) -> str:
 # ---- Brief ------------------------------------------------------------
 
 def format_brief(brief: Brief) -> list[str]:
-    """Split the brief into Telegram-sized chunks if needed."""
-    header = "📰 *Daily Macro Brief*\n\n"
-    full = header + brief.content
-    return _split_message(full)
+    header = "📰 <b>Daily Macro Brief</b>\n\n"
+    return _split_message(header + _h(brief.content))
 
 
 # ---- Trading ideas ----------------------------------------------------
@@ -121,31 +116,29 @@ def format_idea(idea: Idea) -> str:
     asset_name = ASSET_NAMES.get(idea.asset, idea.asset)
 
     return (
-        f"{asset_emoji} *{asset_name}* — {direction_emoji} *{idea.direction}*\n"
-        f"⏱ Timeframe: `{idea.timeframe}`\n"
-        f"🎯 Entry: `{idea.entry}`\n"
-        f"🛑 Stop Loss: `{idea.stop_loss}`\n"
-        f"✅ Take Profit: `{idea.take_profit}`\n"
-        f"⚖️ R:R Ratio: `{idea.rr_ratio}`\n"
-        f"💡 _{idea.reasoning}_"
+        f"{asset_emoji} <b>{asset_name}</b> — {direction_emoji} <b>{idea.direction}</b>\n"
+        f"⏱ Timeframe: <code>{_h(idea.timeframe)}</code>\n"
+        f"🎯 Entry: <code>{_h(idea.entry)}</code>\n"
+        f"🛑 Stop Loss: <code>{_h(idea.stop_loss)}</code>\n"
+        f"✅ Take Profit: <code>{_h(idea.take_profit)}</code>\n"
+        f"⚖️ R:R Ratio: <code>{_h(idea.rr_ratio)}</code>\n"
+        f"💡 <i>{_h(idea.reasoning)}</i>"
     )
 
 
 def format_all_ideas(ideas: list[Idea]) -> list[str]:
     if not ideas:
-        return ["⚠️ No trading ideas available yet\\. Check back after 07:30 UTC\\."]
+        return ["⚠️ No trading ideas available yet. Check back after 07:30 UTC."]
 
-    header = "💡 *Today's Trading Ideas*\n\n"
-    cards = [f"*Idea {i + 1}*\n{format_idea(idea)}" for i, idea in enumerate(ideas)]
-    body = "\n\n" + "─" * 20 + "\n\n".join([""] + cards)
-    full = header + body
-    return _split_message(full)
+    header = "💡 <b>Today's Trading Ideas</b>\n\n"
+    cards = [f"<b>Idea {i + 1}</b>\n{format_idea(idea)}" for i, idea in enumerate(ideas)]
+    body = ("\n\n" + "─" * 20 + "\n\n").join(cards)
+    return _split_message(header + body)
 
 
-# ---- Broadcast message ------------------------------------------------
+# ---- Broadcast --------------------------------------------------------
 
 def format_broadcast(brief: Brief, ideas: list[Idea]) -> list[str]:
-    """Combine brief and ideas into one broadcast payload (multiple messages)."""
     messages = []
     messages.extend(format_brief(brief))
     messages.extend(format_all_ideas(ideas))
@@ -155,13 +148,10 @@ def format_broadcast(brief: Brief, ideas: list[Idea]) -> list[str]:
 # ---- Utility ----------------------------------------------------------
 
 def _split_message(text: str, max_len: int = TELEGRAM_MAX) -> list[str]:
-    """Split a long message into chunks ≤ max_len characters."""
     if len(text) <= max_len:
         return [text]
-
     chunks = []
     while len(text) > max_len:
-        # Try to split at a paragraph boundary
         split_at = text.rfind("\n\n", 0, max_len)
         if split_at == -1:
             split_at = text.rfind("\n", 0, max_len)

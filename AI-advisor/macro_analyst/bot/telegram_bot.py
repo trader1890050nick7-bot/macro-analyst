@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 async def _send_chunks(
     update: Update,
     messages: list[str],
-    parse_mode: str = ParseMode.MARKDOWN_V2,
+    parse_mode: str = ParseMode.HTML,
 ) -> None:
     for chunk in messages:
         await update.message.reply_text(chunk, parse_mode=parse_mode)
@@ -54,14 +54,14 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.reply_text(
         format_welcome(),
-        parse_mode=ParseMode.MARKDOWN_V2,
+        parse_mode=ParseMode.HTML,
     )
 
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         format_help(),
-        parse_mode=ParseMode.MARKDOWN_V2,
+        parse_mode=ParseMode.HTML,
     )
 
 
@@ -71,8 +71,7 @@ async def cmd_brief(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     brief = db.get_latest_brief()
     if not brief:
         await update.message.reply_text(
-            "⚠️ No brief available yet\\. Briefs are generated at 07:00 UTC\\.",
-            parse_mode=ParseMode.MARKDOWN_V2,
+            "⚠️ No brief available yet. Briefs are generated at 07:00 UTC.",
         )
         return
 
@@ -120,7 +119,7 @@ async def broadcast_daily(application: Application) -> None:
                 await application.bot.send_message(
                     chat_id=user_id,
                     text=msg,
-                    parse_mode=ParseMode.MARKDOWN_V2,
+                    parse_mode=ParseMode.HTML,
                 )
         except Exception as exc:
             logger.error("Failed to send broadcast to %s: %s", user_id, exc)

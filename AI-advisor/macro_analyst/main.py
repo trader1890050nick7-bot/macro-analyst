@@ -18,7 +18,6 @@ REST endpoints (for health checks & manual triggers):
 
 import asyncio
 import logging
-import threading
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -58,11 +57,9 @@ async def lifespan(app: FastAPI):
     _scheduler.start()
     logger.info("Scheduler started with %d jobs", len(_scheduler.get_jobs()))
 
-    # Start Telegram polling in a background thread so it doesn't block FastAPI
-    _tg_thread = threading.Thread(
-        target=_run_telegram_polling, daemon=True, name="telegram-polling"
-    )
-    _tg_thread.start()
+    # Start Telegram polling directly in the FastAPI event loop
+    await _tg_application.updater.start_polling()
+    await _tg_application.start()
     logger.info("Telegram polling started")
 
     yield
@@ -70,18 +67,9 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Shutting down...")
     _scheduler.shutdown(wait=False)
+    await _tg_application.updater.stop()
     await _tg_application.stop()
     await _tg_application.shutdown()
-
-
-def _run_telegram_polling() -> None:
-    """Run the Telegram bot in its own event loop (separate thread)."""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        loop.run_until_complete(_tg_application.run_polling(close_loop=False))
-    finally:
-        loop.close()
 
 
 # ---- app --------------------------------------------------------------
