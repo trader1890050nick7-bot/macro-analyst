@@ -90,17 +90,17 @@ async def job_broadcast(application) -> None:
 def create_scheduler(application) -> AsyncIOScheduler:
     scheduler = AsyncIOScheduler(timezone="UTC")
 
-    # 06:30 UTC — morning sentiment update
+    # 06:30 UTC Mon–Fri — morning sentiment update (weekdays only)
     scheduler.add_job(
         job_sentiment_update,
-        trigger=CronTrigger(hour=6, minute=30, timezone="UTC"),
+        trigger=CronTrigger(hour=6, minute=30, day_of_week="mon-fri", timezone="UTC"),
         id="sentiment_morning",
         name="Sentiment Update (Morning)",
         replace_existing=True,
         misfire_grace_time=300,
     )
 
-    # 12:00 UTC — midday sentiment update
+    # 12:00 UTC every day — midday sentiment update (weekdays 2nd run / weekends only run)
     scheduler.add_job(
         job_sentiment_update,
         trigger=CronTrigger(hour=12, minute=0, timezone="UTC"),
@@ -110,10 +110,10 @@ def create_scheduler(application) -> AsyncIOScheduler:
         misfire_grace_time=300,
     )
 
-    # 20:00 UTC — evening sentiment update
+    # 20:00 UTC Mon–Fri — evening sentiment update (weekdays only)
     scheduler.add_job(
         job_sentiment_update,
-        trigger=CronTrigger(hour=20, minute=0, timezone="UTC"),
+        trigger=CronTrigger(hour=20, minute=0, day_of_week="mon-fri", timezone="UTC"),
         id="sentiment_evening",
         name="Sentiment Update (Evening)",
         replace_existing=True,
