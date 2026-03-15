@@ -19,7 +19,7 @@ SUPABASE_URL: str = _require("SUPABASE_URL")
 SUPABASE_KEY: str = _require("SUPABASE_KEY")
 
 # Claude model
-CLAUDE_MODEL: str = "claude-sonnet-4-6"
+CLAUDE_MODEL: str = "claude-haiku-4-5-20251001"
 
 # Cache TTL in minutes
 CACHE_TTL_MINUTES: int = 30
