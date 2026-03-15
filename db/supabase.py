@@ -39,6 +39,38 @@ def get_subscribed_users() -> list[int]:
     return [row["telegram_id"] for row in (response.data or [])]
 
 
+def get_subscribed_users_with_language() -> list[tuple[int, str]]:
+    response = (
+        get_client()
+        .table("users")
+        .select("telegram_id, language")
+        .eq("subscribed", True)
+        .execute()
+    )
+    return [
+        (row["telegram_id"], row.get("language") or "en")
+        for row in (response.data or [])
+    ]
+
+
+def get_user_language(telegram_id: int) -> str:
+    response = (
+        get_client()
+        .table("users")
+        .select("language")
+        .eq("telegram_id", telegram_id)
+        .limit(1)
+        .execute()
+    )
+    if response.data:
+        return response.data[0].get("language") or "en"
+    return "en"
+
+
+def update_user_language(telegram_id: int, language: str) -> None:
+    get_client().table("users").update({"language": language}).eq("telegram_id", telegram_id).execute()
+
+
 # ---- prices -----------------------------------------------------------
 
 def save_price(record: PriceRecord) -> None:

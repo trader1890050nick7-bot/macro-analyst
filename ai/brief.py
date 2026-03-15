@@ -8,6 +8,7 @@ Output: structured text 400–500 words covering:
 """
 
 import logging
+from datetime import date
 from typing import Optional
 
 import anthropic
@@ -29,7 +30,7 @@ def _get_client() -> anthropic.Anthropic:
 
 BRIEF_SYSTEM = """You are a senior macro market strategist writing a morning market brief for professional traders. Your writing is concise, insightful, and actionable. Use precise financial language."""
 
-BRIEF_PROMPT_TEMPLATE = """Write today's Daily Macro Brief based on the following data.
+BRIEF_PROMPT_TEMPLATE = """Today's date is {today_date}. Write the Daily Macro Brief for {today_date} based on the following data.
 
 **Asset Sentiments:**
 {sentiment_block}
@@ -66,7 +67,9 @@ async def generate_daily_brief(
         or "No recent macro news available."
     )
 
+    today = date.today().strftime("%B %d, %Y")
     prompt = BRIEF_PROMPT_TEMPLATE.format(
+        today_date=today,
         sentiment_block=sentiment_block,
         news_block=news_block,
     )

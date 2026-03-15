@@ -48,8 +48,9 @@ def format_welcome() -> str:
         "/brief — Today's macro brief\n"
         "/sentiment — Live sentiment for all 5 assets\n"
         "/ideas — Today's 3 trading ideas\n"
+        "/language — Choose your language 🌐\n"
         "/help — Show this help message\n\n"
-        "📅 Updates delivered daily at 07:35 UTC"
+        "📅 Broadcast Mon–Fri at 20:05 Belgrade/Berlin time"
     )
 
 
@@ -62,12 +63,14 @@ def format_help() -> str:
         "/brief — Today's daily macro brief (400-500 words)\n"
         "/sentiment — Sentiment cards for all 5 assets\n"
         "/ideas — Today's 3 trading ideas with entry/SL/TP\n"
+        "/language — Choose your language 🌐\n"
         "/help — This help message\n\n"
-        "⏰ <b>Schedule (UTC)</b>\n"
-        "• Every 30 min: Price &amp; sentiment update\n"
-        "• 07:00 — Daily macro brief generated\n"
-        "• 07:30 — Trading ideas generated\n"
-        "• 07:35 — Brief &amp; ideas delivered to subscribers"
+        "⏰ <b>Schedule (Mon–Fri, UTC)</b>\n"
+        "• 06:30 / 12:00 / 20:00 — Sentiment update\n"
+        "• 18:45 — Daily macro brief generated\n"
+        "• 19:00 — Trading ideas generated\n"
+        "• 19:05 — Brief &amp; ideas delivered to subscribers\n\n"
+        "🌐 <b>Languages:</b> EN • ES • DE • RU • UZ • UK • FR • ZH"
     )
 
 

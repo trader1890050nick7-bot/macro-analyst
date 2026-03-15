@@ -120,31 +120,31 @@ def create_scheduler(application) -> AsyncIOScheduler:
         misfire_grace_time=300,
     )
 
-    # 18:45 UTC daily (19:45 Belgrade/Berlin UTC+1) — macro brief
+    # 18:45 UTC Mon–Fri (19:45 Belgrade/Berlin UTC+1) — macro brief
     scheduler.add_job(
         job_daily_brief,
-        trigger=CronTrigger(hour=18, minute=45, timezone="UTC"),
+        trigger=CronTrigger(hour=18, minute=45, day_of_week="mon-fri", timezone="UTC"),
         id="daily_brief",
         name="Daily Brief",
         replace_existing=True,
         misfire_grace_time=300,
     )
 
-    # 19:00 UTC daily (20:00 Belgrade/Berlin UTC+1) — trading ideas
+    # 19:00 UTC Mon–Fri (20:00 Belgrade/Berlin UTC+1) — trading ideas
     scheduler.add_job(
         job_trading_ideas,
-        trigger=CronTrigger(hour=19, minute=0, timezone="UTC"),
+        trigger=CronTrigger(hour=19, minute=0, day_of_week="mon-fri", timezone="UTC"),
         id="trading_ideas",
         name="Trading Ideas",
         replace_existing=True,
         misfire_grace_time=300,
     )
 
-    # 19:05 UTC daily (20:05 Belgrade/Berlin UTC+1) — Telegram broadcast
+    # 19:05 UTC Mon–Fri (20:05 Belgrade/Berlin UTC+1) — Telegram broadcast
     scheduler.add_job(
         job_broadcast,
         args=[application],
-        trigger=CronTrigger(hour=19, minute=5, timezone="UTC"),
+        trigger=CronTrigger(hour=19, minute=5, day_of_week="mon-fri", timezone="UTC"),
         id="broadcast",
         name="Telegram Broadcast",
         replace_existing=True,

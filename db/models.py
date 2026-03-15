@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class User(BaseModel):
     telegram_id: int
     subscribed: bool = True
+    language: str = "en"
     created_at: Optional[datetime] = None
 
 
@@ -58,8 +59,12 @@ class Idea(BaseModel):
 # CREATE TABLE IF NOT EXISTS users (
 #     telegram_id BIGINT PRIMARY KEY,
 #     subscribed  BOOLEAN DEFAULT TRUE,
+#     language    TEXT DEFAULT 'en',
 #     created_at  TIMESTAMPTZ DEFAULT NOW()
 # );
+#
+# If table already exists:
+#   ALTER TABLE users ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'en';
 #
 # CREATE TABLE IF NOT EXISTS prices (
 #     id          BIGSERIAL PRIMARY KEY,
