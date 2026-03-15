@@ -176,8 +176,65 @@ def get_latest_brief() -> Optional[Brief]:
 # ---- ideas ------------------------------------------------------------
 
 def save_ideas(ideas: list[Idea]) -> None:
-    rows = [idea.model_dump(exclude={"created_at"}) for idea in ideas]
+    rows = [idea.model_dump(exclude={"created_at", "id", "result_price", "checked_at"}) for idea in ideas]
     get_client().table("ideas").insert(rows).execute()
+
+
+def get_open_ideas() -> list[Idea]:
+    """Return all ideas with result='OPEN'."""
+    response = (
+        get_client()
+        .table("ideas")
+        .select("*")
+        .eq("result", "OPEN")
+        .order("created_at", desc=False)
+        .execute()
+    )
+    return [Idea(**row) for row in (response.data or [])]
+
+
+def update_idea_result(idea_id: int, result: str, result_price: float) -> None:
+    get_client().table("ideas").update({
+        "result": result,
+        "result_price": result_price,
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+    }).eq("id", idea_id).execute()
+
+
+def get_performance_stats() -> dict:
+    """Return aggregated performance stats across all ideas."""
+    from collections import defaultdict
+
+    response = get_client().table("ideas").select("*").execute()
+    ideas = response.data or []
+
+    total = len(ideas)
+    tp_hit = sum(1 for i in ideas if i.get("result") == "TP_HIT")
+    sl_hit = sum(1 for i in ideas if i.get("result") == "SL_HIT")
+    open_count = sum(1 for i in ideas if i.get("result", "OPEN") == "OPEN")
+    closed = tp_hit + sl_hit
+    win_rate = round(tp_hit / closed * 100, 1) if closed > 0 else 0.0
+
+    by_asset: dict = defaultdict(lambda: {"total": 0, "tp": 0, "sl": 0, "open": 0})
+    for idea in ideas:
+        asset = idea.get("asset", "UNKNOWN")
+        by_asset[asset]["total"] += 1
+        res = idea.get("result", "OPEN")
+        if res == "TP_HIT":
+            by_asset[asset]["tp"] += 1
+        elif res == "SL_HIT":
+            by_asset[asset]["sl"] += 1
+        else:
+            by_asset[asset]["open"] += 1
+
+    return {
+        "total": total,
+        "tp_hit": tp_hit,
+        "sl_hit": sl_hit,
+        "open": open_count,
+        "win_rate": win_rate,
+        "by_asset": dict(by_asset),
+    }
 
 
 def get_latest_ideas() -> list[Idea]:

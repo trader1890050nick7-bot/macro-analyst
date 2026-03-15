@@ -37,6 +37,7 @@ class Brief(BaseModel):
 
 
 class Idea(BaseModel):
+    id: Optional[int] = None
     asset: str
     direction: str      # "LONG" | "SHORT"
     entry: str
@@ -45,6 +46,9 @@ class Idea(BaseModel):
     rr_ratio: str
     timeframe: str
     reasoning: str
+    result: str = "OPEN"        # "OPEN" | "TP_HIT" | "SL_HIT"
+    result_price: Optional[float] = None
+    checked_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
 
 
@@ -90,15 +94,23 @@ class Idea(BaseModel):
 # );
 #
 # CREATE TABLE IF NOT EXISTS ideas (
-#     id         BIGSERIAL PRIMARY KEY,
-#     asset      TEXT NOT NULL,
-#     direction  TEXT NOT NULL,
-#     entry      TEXT NOT NULL,
-#     stop_loss  TEXT NOT NULL,
-#     take_profit TEXT NOT NULL,
-#     rr_ratio   TEXT NOT NULL,
-#     timeframe  TEXT NOT NULL,
-#     reasoning  TEXT NOT NULL,
-#     created_at TIMESTAMPTZ DEFAULT NOW()
+#     id           BIGSERIAL PRIMARY KEY,
+#     asset        TEXT NOT NULL,
+#     direction    TEXT NOT NULL,
+#     entry        TEXT NOT NULL,
+#     stop_loss    TEXT NOT NULL,
+#     take_profit  TEXT NOT NULL,
+#     rr_ratio     TEXT NOT NULL,
+#     timeframe    TEXT NOT NULL,
+#     reasoning    TEXT NOT NULL,
+#     result       TEXT DEFAULT 'OPEN',
+#     result_price NUMERIC,
+#     checked_at   TIMESTAMPTZ,
+#     created_at   TIMESTAMPTZ DEFAULT NOW()
 # );
+#
+# If table already exists, run these ALTER statements in Supabase SQL editor:
+#   ALTER TABLE ideas ADD COLUMN IF NOT EXISTS result TEXT DEFAULT 'OPEN';
+#   ALTER TABLE ideas ADD COLUMN IF NOT EXISTS result_price NUMERIC;
+#   ALTER TABLE ideas ADD COLUMN IF NOT EXISTS checked_at TIMESTAMPTZ;
 # -----------------------------------------------------------------------

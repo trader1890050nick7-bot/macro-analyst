@@ -18,13 +18,14 @@ from telegram.ext import (
 )
 from telegram.constants import ParseMode
 
-from config import TELEGRAM_BOT_TOKEN
+from config import TELEGRAM_BOT_TOKEN, ADMIN_TELEGRAM_ID
 from bot.formatter import (
     format_welcome,
     format_help,
     format_all_sentiments,
     format_brief,
     format_all_ideas,
+    format_admin_stats,
 )
 from db import supabase as db
 
@@ -92,6 +93,17 @@ async def cmd_ideas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await _send_chunks(update, format_all_ideas(ideas))
 
 
+# ---- admin commands ---------------------------------------------------
+
+async def cmd_admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.effective_user.id
+    if not ADMIN_TELEGRAM_ID or user_id != ADMIN_TELEGRAM_ID:
+        return  # Silent ignore for non-admins
+
+    stats = db.get_performance_stats()
+    await update.message.reply_text(format_admin_stats(stats), parse_mode=ParseMode.HTML)
+
+
 # ---- broadcast (called by scheduler) ----------------------------------
 
 async def broadcast_daily(application: Application) -> None:
@@ -134,4 +146,5 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("brief", cmd_brief))
     app.add_handler(CommandHandler("sentiment", cmd_sentiment))
     app.add_handler(CommandHandler("ideas", cmd_ideas))
+    app.add_handler(CommandHandler("admin_stats", cmd_admin_stats))
     return app

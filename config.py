@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -17,6 +18,10 @@ NEWS_API_KEY: str = _require("NEWS_API_KEY")
 TELEGRAM_BOT_TOKEN: str = _require("TELEGRAM_BOT_TOKEN")
 SUPABASE_URL: str = _require("SUPABASE_URL")
 SUPABASE_KEY: str = _require("SUPABASE_KEY")
+
+# Admin Telegram ID for /admin_stats (optional — bot still works without it)
+_admin_raw = os.getenv("ADMIN_TELEGRAM_ID", "")
+ADMIN_TELEGRAM_ID: Optional[int] = int(_admin_raw) if _admin_raw.isdigit() else None
 
 # Claude model
 CLAUDE_MODEL: str = "claude-haiku-4-5-20251001"

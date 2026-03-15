@@ -61,6 +61,18 @@ async def job_trading_ideas() -> None:
         logger.error("[scheduler] Trading ideas failed: %s", exc)
 
 
+async def job_performance_check() -> None:
+    """Hourly: check open trading ideas against current prices."""
+    logger.info("[scheduler] Starting performance check job")
+    try:
+        from data.performance import run_performance_checks
+
+        await run_performance_checks()
+        logger.info("[scheduler] Performance check done")
+    except Exception as exc:
+        logger.error("[scheduler] Performance check failed: %s", exc)
+
+
 async def job_broadcast(application) -> None:
     """07:35 UTC: broadcast brief + ideas to all subscribers."""
     logger.info("[scheduler] Starting broadcast job")
@@ -135,6 +147,16 @@ def create_scheduler(application) -> AsyncIOScheduler:
         trigger=CronTrigger(hour=19, minute=5, timezone="UTC"),
         id="broadcast",
         name="Telegram Broadcast",
+        replace_existing=True,
+        misfire_grace_time=300,
+    )
+
+    # Every hour at :00 — performance check for open ideas
+    scheduler.add_job(
+        job_performance_check,
+        trigger=CronTrigger(minute=0, timezone="UTC"),
+        id="performance_check",
+        name="Performance Check",
         replace_existing=True,
         misfire_grace_time=300,
     )

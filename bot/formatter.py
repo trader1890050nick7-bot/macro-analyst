@@ -145,6 +145,36 @@ def format_broadcast(brief: Brief, ideas: list[Idea]) -> list[str]:
     return messages
 
 
+# ---- Admin stats ------------------------------------------------------
+
+def format_admin_stats(stats: dict) -> str:
+    total = stats.get("total", 0)
+    tp_hit = stats.get("tp_hit", 0)
+    sl_hit = stats.get("sl_hit", 0)
+    open_count = stats.get("open", 0)
+    win_rate = stats.get("win_rate", 0.0)
+    by_asset = stats.get("by_asset", {})
+    closed = tp_hit + sl_hit
+
+    lines = [
+        "🔐 <b>Admin — Trading Ideas Performance</b>\n",
+        f"📊 Total ideas: <b>{total}</b>",
+        f"✅ TP Hit: <b>{tp_hit}</b>   🛑 SL Hit: <b>{sl_hit}</b>   🔄 Open: <b>{open_count}</b>",
+        f"🏆 Win rate: <b>{win_rate}%</b>  ({tp_hit}/{closed} closed)\n",
+        "<b>By asset:</b>",
+    ]
+
+    for asset in sorted(by_asset):
+        s = by_asset[asset]
+        emoji = ASSET_EMOJI.get(asset, "📌")
+        name = ASSET_NAMES.get(asset, asset)
+        asset_closed = s["tp"] + s["sl"]
+        wr = f"{round(s['tp'] / asset_closed * 100)}%" if asset_closed > 0 else "—"
+        lines.append(f"{emoji} {name}: ✅{s['tp']} 🛑{s['sl']} 🔄{s['open']}  WR {wr}")
+
+    return "\n".join(lines)
+
+
 # ---- Utility ----------------------------------------------------------
 
 def _split_message(text: str, max_len: int = TELEGRAM_MAX) -> list[str]:
