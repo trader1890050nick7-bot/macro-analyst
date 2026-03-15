@@ -50,7 +50,7 @@ def format_welcome() -> str:
         "/ideas — Today's 3 trading ideas\n"
         "/language — Choose your language 🌐\n"
         "/help — Show this help message\n\n"
-        "📅 Broadcast Mon–Fri at 20:05 Belgrade/Berlin time"
+        "📅 Broadcast Mon–Fri at 20:05 Berlin time"
     )
 
 
