@@ -1,10 +1,10 @@
 """APScheduler jobs.
 
 Schedule (all times UTC):
-  - Every 30 min  : fetch prices + news → run sentiment → save to DB
-  - 07:00 daily   : generate macro brief → save to DB
-  - 07:30 daily   : generate trading ideas → save to DB
-  - 07:35 daily   : send brief + ideas to all subscribed Telegram users
+  - 06:30, 12:00, 20:00 : fetch prices + news → run sentiment → save to DB
+  - 18:45 daily         : generate macro brief → save to DB
+  - 19:00 daily         : generate trading ideas → save to DB
+  - 19:05 daily         : send brief + ideas to all subscribed Telegram users
 """
 
 import asyncio
@@ -12,7 +12,6 @@ import logging
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from apscheduler.triggers.interval import IntervalTrigger
 
 logger = logging.getLogger(__name__)
 
@@ -79,14 +78,34 @@ async def job_broadcast(application) -> None:
 def create_scheduler(application) -> AsyncIOScheduler:
     scheduler = AsyncIOScheduler(timezone="UTC")
 
-    # Every 30 minutes — sentiment update
+    # 06:30 UTC — morning sentiment update
     scheduler.add_job(
         job_sentiment_update,
-        trigger=IntervalTrigger(minutes=30),
-        id="sentiment_update",
-        name="Sentiment Update",
+        trigger=CronTrigger(hour=6, minute=30, timezone="UTC"),
+        id="sentiment_morning",
+        name="Sentiment Update (Morning)",
         replace_existing=True,
-        misfire_grace_time=120,
+        misfire_grace_time=300,
+    )
+
+    # 12:00 UTC — midday sentiment update
+    scheduler.add_job(
+        job_sentiment_update,
+        trigger=CronTrigger(hour=12, minute=0, timezone="UTC"),
+        id="sentiment_midday",
+        name="Sentiment Update (Midday)",
+        replace_existing=True,
+        misfire_grace_time=300,
+    )
+
+    # 20:00 UTC — evening sentiment update
+    scheduler.add_job(
+        job_sentiment_update,
+        trigger=CronTrigger(hour=20, minute=0, timezone="UTC"),
+        id="sentiment_evening",
+        name="Sentiment Update (Evening)",
+        replace_existing=True,
+        misfire_grace_time=300,
     )
 
     # 18:45 UTC daily (19:45 Belgrade/Berlin UTC+1) — macro brief
