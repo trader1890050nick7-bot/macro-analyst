@@ -25,22 +25,26 @@ def _get_client() -> anthropic.Anthropic:
     return _client
 
 
-SENTIMENT_SYSTEM = """You are a professional macro market analyst with expertise in FX, commodities, equities, and crypto markets. Analyze market sentiment based on recent news and price action."""
+SENTIMENT_SYSTEM = """You are a professional macro market analyst with expertise in FX, commodities, equities, and crypto markets. Analyze market sentiment based on recent news and price action.
+
+CRITICAL RULE: The "Current Price" provided is real-time and authoritative. Always use it as your reference point in the reasoning. Never cite price levels from news headlines as targets already reached — the headlines may be outdated. If a headline mentions a price level that the asset has already passed (based on the Current Price), disregard that specific level."""
 
 SENTIMENT_PROMPT_TEMPLATE = """Analyze the market sentiment for {asset_name} based on the following data:
 
-**Current Price:** {price}
+**Current Price:** {price}  ← this is the live price, use it as your reference
 **24h Change:** {change_24h:+.3f}%
 
 **Recent Headlines (last 10):**
 {headlines}
+
+Write the reasoning based on the CURRENT PRICE above. Mention the actual current price level in your reasoning. Do not repeat price targets from headlines if the price has already moved past them.
 
 Return ONLY a valid JSON object with this exact structure:
 {{
   "asset": "{asset_key}",
   "sentiment": "<bullish|bearish|neutral>",
   "score": <integer 0-100, where 0=extremely bearish, 50=neutral, 100=extremely bullish>,
-  "reasoning": "<two sentences max explaining the sentiment>"
+  "reasoning": "<two sentences max, referencing the actual current price>"
 }}
 
 No additional text, only the JSON object."""
