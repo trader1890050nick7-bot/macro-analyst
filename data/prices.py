@@ -88,15 +88,22 @@ async def _fetch_brent() -> Optional[PriceRecord]:
 
 
 async def _fetch_spx() -> Optional[PriceRecord]:
-    # SPY ETF ≈ S&P 500 / 10 — multiply by 10 to get the index / ES futures level
-    data = await _av_get({"function": "GLOBAL_QUOTE", "symbol": "SPY"})
-    quote = data.get("Global Quote", {})
-    spy_price = float(quote.get("05. price", 0))
-    change_pct = float(quote.get("10. change percent", "0%").replace("%", ""))
-    if not spy_price:
+    # Fetch S&P 500 index (^GSPC) directly from Yahoo Finance — no API key needed
+    url = "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC"
+    async with httpx.AsyncClient(timeout=15, headers={"User-Agent": "Mozilla/5.0"}) as client:
+        r = await client.get(url, params={"interval": "1d", "range": "2d"})
+        r.raise_for_status()
+        data = r.json()
+    result = data.get("chart", {}).get("result", [])
+    if not result:
         return None
-    index_price = round(spy_price * 10, 0)
-    return PriceRecord(asset="SPX", price=index_price, change_24h=round(change_pct, 3))
+    meta = result[0].get("meta", {})
+    price = float(meta.get("regularMarketPrice", 0))
+    prev_close = float(meta.get("chartPreviousClose", 0))
+    if not price:
+        return None
+    change_24h = ((price - prev_close) / prev_close * 100) if prev_close else 0.0
+    return PriceRecord(asset="SPX", price=round(price, 2), change_24h=round(change_24h, 3))
 
 
 async def _fetch_btc() -> Optional[PriceRecord]:

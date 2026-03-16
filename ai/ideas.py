@@ -39,8 +39,9 @@ IDEAS_PROMPT_TEMPLATE = """Based on today's macro brief and market data, generat
 Generate exactly 3 trading ideas as a JSON array. Requirements:
 - Exactly 3 ideas
 - At least 1 idea MUST be for BTC (Bitcoin)
-- Each idea must have realistic entry ranges, stop loss, and take profit levels
+- Entry, stop loss, and take profit MUST be derived from the CURRENT PRICES above — never use levels from your training knowledge
 - R:R ratio should be at least 1:1.5
+- Never write "SPX" — always write "S&P 500" in reasoning text
 
 Return ONLY a valid JSON array with this exact structure:
 [
