@@ -43,7 +43,8 @@ Write a structured brief of 400–500 words covering:
 2. **Asset Analysis** — for each of the 5 assets, state key price levels and directional bias
 3. **Overall Risk Sentiment** — conclude with Risk-On / Risk-Off / Neutral and why
 
-Use professional financial language. Be direct and specific. Do NOT use bullet points for the main narrative — use short paragraphs."""
+Use professional financial language. Be direct and specific. Do NOT use bullet points for the main narrative — use short paragraphs.
+IMPORTANT: Use the exact asset names and tickers as given in the sentiment data (e.g. "Brent Crude (CL)", "S&P 500 (ES)", "Gold (XAUUSD)"). Be consistent — do not switch to alternative names like "crude oil", "WTI", "SPX", or "XAU" within the same section."""
 
 
 def _format_sentiments(sentiments: list[Sentiment]) -> str:

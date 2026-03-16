@@ -88,14 +88,15 @@ async def _fetch_brent() -> Optional[PriceRecord]:
 
 
 async def _fetch_spx() -> Optional[PriceRecord]:
-    # Use SPY ETF as S&P 500 proxy on Alpha Vantage
+    # SPY ETF ≈ S&P 500 / 10 — multiply by 10 to get the index / ES futures level
     data = await _av_get({"function": "GLOBAL_QUOTE", "symbol": "SPY"})
     quote = data.get("Global Quote", {})
-    price = float(quote.get("05. price", 0))
+    spy_price = float(quote.get("05. price", 0))
     change_pct = float(quote.get("10. change percent", "0%").replace("%", ""))
-    if not price:
+    if not spy_price:
         return None
-    return PriceRecord(asset="SPX", price=round(price, 2), change_24h=round(change_pct, 3))
+    index_price = round(spy_price * 10, 0)
+    return PriceRecord(asset="SPX", price=index_price, change_24h=round(change_pct, 3))
 
 
 async def _fetch_btc() -> Optional[PriceRecord]:

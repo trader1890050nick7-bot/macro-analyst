@@ -33,7 +33,9 @@ class Sentiment(BaseModel):
 
 
 class Brief(BaseModel):
+    id: Optional[int] = None
     content: str
+    broadcast_sent: bool = False
     created_at: Optional[datetime] = None
 
 
@@ -93,10 +95,14 @@ class Idea(BaseModel):
 # );
 #
 # CREATE TABLE IF NOT EXISTS briefs (
-#     id         BIGSERIAL PRIMARY KEY,
-#     content    TEXT NOT NULL,
-#     created_at TIMESTAMPTZ DEFAULT NOW()
+#     id             BIGSERIAL PRIMARY KEY,
+#     content        TEXT NOT NULL,
+#     broadcast_sent BOOLEAN DEFAULT FALSE,
+#     created_at     TIMESTAMPTZ DEFAULT NOW()
 # );
+#
+# If table already exists:
+#   ALTER TABLE briefs ADD COLUMN IF NOT EXISTS broadcast_sent BOOLEAN DEFAULT FALSE;
 #
 # CREATE TABLE IF NOT EXISTS ideas (
 #     id           BIGSERIAL PRIMARY KEY,

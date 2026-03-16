@@ -191,6 +191,19 @@ def save_brief(brief: Brief) -> None:
     get_client().table("briefs").insert({"content": brief.content}).execute()
 
 
+def claim_brief_for_broadcast(brief_id: int) -> bool:
+    """Atomically mark brief as broadcast_sent=True. Returns True only for the first caller."""
+    result = (
+        get_client()
+        .table("briefs")
+        .update({"broadcast_sent": True})
+        .eq("id", brief_id)
+        .eq("broadcast_sent", False)
+        .execute()
+    )
+    return bool(result.data)
+
+
 def get_latest_brief() -> Optional[Brief]:
     response = (
         get_client()

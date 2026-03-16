@@ -32,27 +32,27 @@ CACHE_TTL_MINUTES: int = 30
 # Assets configuration
 ASSETS: dict = {
     "EURUSD": {
-        "name": "EUR/USD",
+        "name": "EUR/USD (EURUSD)",
         "type": "fx",
         "news_query": "euro dollar ECB Fed",
     },
     "XAUUSD": {
-        "name": "Gold XAU/USD",
+        "name": "Gold (XAUUSD)",
         "type": "commodity",
         "news_query": "gold XAU fed dollar inflation",
     },
     "BRENT": {
-        "name": "Brent Crude",
+        "name": "Brent Crude (CL)",
         "type": "commodity",
         "news_query": "brent crude oil OPEC",
     },
     "SPX": {
-        "name": "S&P 500",
+        "name": "S&P 500 (ES)",
         "type": "index",
-        "news_query": "S&P 500 fed earnings market",
+        "news_query": "S&P 500 ES futures fed earnings market",
     },
     "BTC": {
-        "name": "Bitcoin BTC",
+        "name": "Bitcoin (BTCUSD)",
         "type": "crypto",
         "news_query": "bitcoin crypto ETF",
     },

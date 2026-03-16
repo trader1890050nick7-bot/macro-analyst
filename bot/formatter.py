@@ -24,11 +24,11 @@ ASSET_EMOJI = {
 }
 
 ASSET_NAMES = {
-    "EURUSD": "EUR/USD",
-    "XAUUSD": "Gold XAU/USD",
-    "BRENT": "Brent Crude",
-    "SPX": "S&amp;P 500",
-    "BTC": "Bitcoin BTC",
+    "EURUSD": "EUR/USD · EURUSD",
+    "XAUUSD": "Gold · XAUUSD",
+    "BRENT": "Brent Crude · CL",
+    "SPX": "S&amp;P 500 · ES",
+    "BTC": "Bitcoin · BTCUSD",
 }
 
 

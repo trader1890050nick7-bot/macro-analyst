@@ -170,6 +170,12 @@ async def broadcast_daily(application: Application) -> None:
         logger.warning("Nothing to broadcast — brief and ideas both missing")
         return
 
+    # Deduplication: only one Railway instance should send the broadcast
+    if brief and brief.id is not None:
+        if not db.claim_brief_for_broadcast(brief.id):
+            logger.info("[broadcast] Already claimed by another instance — skipping")
+            return
+
     subscribers = db.get_subscribed_users_with_language()
     if not subscribers:
         logger.info("No subscribers to broadcast to")
