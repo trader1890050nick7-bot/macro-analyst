@@ -2,9 +2,9 @@
 
 Schedule (all times UTC):
   - 06:30, 12:00, 20:00 : fetch prices + news → run sentiment → save to DB
-  - 18:50 daily         : generate macro brief → save to DB
-  - 18:55 daily         : generate trading ideas → save to DB
-  - 19:00 daily         : send brief + ideas to all subscribed Telegram users
+  - 19:15 daily         : generate macro brief → save to DB
+  - 19:16 daily         : generate trading ideas → save to DB
+  - 19:20 daily         : send brief + ideas to all subscribed Telegram users
 """
 
 import asyncio
@@ -74,7 +74,7 @@ async def job_performance_check() -> None:
 
 
 async def job_broadcast(application) -> None:
-    """19:00 UTC: broadcast brief + ideas to all subscribers."""
+    """19:20 UTC: broadcast brief + ideas to all subscribers."""
     logger.info("[scheduler] Starting broadcast job")
     try:
         from bot.telegram_bot import broadcast_daily
@@ -120,31 +120,31 @@ def create_scheduler(application) -> AsyncIOScheduler:
         misfire_grace_time=300,
     )
 
-    # 18:50 UTC Mon–Fri — macro brief
+    # 19:15 UTC Mon–Fri — macro brief
     scheduler.add_job(
         job_daily_brief,
-        trigger=CronTrigger(hour=18, minute=50, day_of_week="mon-fri", timezone="UTC"),
+        trigger=CronTrigger(hour=19, minute=15, day_of_week="mon-fri", timezone="UTC"),
         id="daily_brief",
         name="Daily Brief",
         replace_existing=True,
         misfire_grace_time=300,
     )
 
-    # 18:55 UTC Mon–Fri — trading ideas
+    # 19:16 UTC Mon–Fri — trading ideas
     scheduler.add_job(
         job_trading_ideas,
-        trigger=CronTrigger(hour=18, minute=55, day_of_week="mon-fri", timezone="UTC"),
+        trigger=CronTrigger(hour=19, minute=16, day_of_week="mon-fri", timezone="UTC"),
         id="trading_ideas",
         name="Trading Ideas",
         replace_existing=True,
         misfire_grace_time=300,
     )
 
-    # 19:00 UTC Mon–Fri — Telegram broadcast
+    # 19:20 UTC Mon–Fri — Telegram broadcast
     scheduler.add_job(
         job_broadcast,
         args=[application],
-        trigger=CronTrigger(hour=19, minute=0, day_of_week="mon-fri", timezone="UTC"),
+        trigger=CronTrigger(hour=19, minute=20, day_of_week="mon-fri", timezone="UTC"),
         id="broadcast",
         name="Telegram Broadcast",
         replace_existing=True,
