@@ -2,7 +2,7 @@
 
 from db.models import Sentiment, Brief, Idea
 
-TELEGRAM_MAX = 4000
+TELEGRAM_MAX = 3800
 
 SENTIMENT_EMOJI = {
     "bullish": "🟢",
@@ -180,16 +180,32 @@ def format_admin_stats(stats: dict) -> str:
 
 # ---- Utility ----------------------------------------------------------
 
+def _safe_split_point(text: str, pos: int) -> int:
+    """Back pos up to before any unclosed HTML tag at the split boundary."""
+    tag_start = text.rfind("<", 0, pos)
+    if tag_start != -1 and ">" not in text[tag_start:pos]:
+        return tag_start
+    return pos
+
+
 def _split_message(text: str, max_len: int = TELEGRAM_MAX) -> list[str]:
     if len(text) <= max_len:
         return [text]
     chunks = []
     while len(text) > max_len:
+        # Prefer splitting at a paragraph break, then a line break
         split_at = text.rfind("\n\n", 0, max_len)
         if split_at == -1:
             split_at = text.rfind("\n", 0, max_len)
         if split_at == -1:
             split_at = max_len
+        # Ensure we never cut inside an HTML tag
+        split_at = _safe_split_point(text, split_at)
+        if split_at == 0:
+            # Fallback: no safe split found, hard-cut at max_len outside any tag
+            split_at = _safe_split_point(text, max_len)
+            if split_at == 0:
+                split_at = max_len
         chunks.append(text[:split_at])
         text = text[split_at:].lstrip()
     if text:
