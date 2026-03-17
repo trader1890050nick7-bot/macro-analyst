@@ -23,6 +23,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
+from telegram.error import Conflict
 
 from config import TELEGRAM_BOT_TOKEN  # validates env on import
 from bot.telegram_bot import build_application
@@ -58,9 +59,19 @@ async def lifespan(app: FastAPI):
     logger.info("Scheduler started with %d jobs", len(_scheduler.get_jobs()))
 
     # Start Telegram polling directly in the FastAPI event loop
-    await _tg_application.updater.start_polling()
-    await _tg_application.start()
-    logger.info("Telegram polling started")
+    # drop_pending_updates=True clears any queued updates so a previously
+    # running instance (local or Railway) cannot cause a Conflict error.
+    try:
+        await _tg_application.updater.start_polling(drop_pending_updates=True)
+        await _tg_application.start()
+        logger.info("Telegram polling started")
+    except Conflict as exc:
+        logger.error(
+            "Telegram Conflict: another bot instance is already polling — %s. "
+            "Stop the other instance and redeploy.",
+            exc,
+        )
+        raise RuntimeError("Telegram bot conflict: only one instance may poll at a time.") from exc
 
     yield
 
