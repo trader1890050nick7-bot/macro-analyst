@@ -167,11 +167,15 @@ async def broadcast_daily(application: Application, force: bool = False) -> None
     from ai.translate import translate_text
     from collections import defaultdict
 
+    logger.info("[broadcast] Starting broadcast (force=%s)", force)
+
     brief = db.get_latest_brief()
     ideas = db.get_latest_ideas()
+    logger.info("[broadcast] DB check — brief: %s, ideas count: %d",
+                f"id={brief.id}" if brief else "None", len(ideas))
 
     if not brief and not ideas:
-        logger.warning("Nothing to broadcast — brief and ideas both missing")
+        logger.warning("[broadcast] Nothing to broadcast — brief and ideas both missing")
         return
 
     # Deduplication: only one Railway instance should send the broadcast.
@@ -180,14 +184,20 @@ async def broadcast_daily(application: Application, force: bool = False) -> None
         if not db.claim_brief_for_broadcast(brief.id):
             logger.info("[broadcast] Already claimed by another instance — skipping")
             return
+    elif force:
+        logger.info("[broadcast] force=True — skipping deduplication lock")
 
     subscribers = db.get_subscribed_users_with_language()
+    logger.info("[broadcast] Subscribers from DB: %d — %s",
+                len(subscribers), [(uid, lang) for uid, lang in subscribers])
     if not subscribers:
-        logger.info("No subscribers to broadcast to")
+        logger.warning("[broadcast] No subscribers found with subscribed=True")
         return
 
     # Build English content once
     messages_en = format_broadcast(brief, ideas) if brief else format_all_ideas(ideas)
+    logger.info("[broadcast] Prepared %d message chunk(s) in EN, total chars: %s",
+                len(messages_en), [len(m) for m in messages_en])
 
     # Group users by language
     by_lang: dict[str, list[int]] = defaultdict(list)
@@ -202,20 +212,27 @@ async def broadcast_daily(application: Application, force: bool = False) -> None
             try:
                 messages = [await translate_text(msg, lang) for msg in messages_en]
             except Exception as exc:
-                logger.error("Translation failed for lang=%s: %s — falling back to EN", lang, exc)
+                logger.error("[broadcast] Translation failed for lang=%s: %s — falling back to EN", lang, exc)
                 messages = messages_en
 
-        logger.info("Broadcasting %d msg(s) in [%s] to %d user(s)", len(messages), lang, len(user_ids))
+        logger.info("[broadcast] Sending %d msg(s) in [%s] to %d user(s): %s",
+                    len(messages), lang, len(user_ids), user_ids)
         for user_id in user_ids:
+            logger.info("[broadcast] → Sending to user_id=%s", user_id)
             try:
-                for msg in messages:
+                for i, msg in enumerate(messages):
+                    logger.info("[broadcast]   chunk %d/%d (%d chars): %s",
+                                i + 1, len(messages), len(msg), msg[:80].replace("\n", " "))
                     await application.bot.send_message(
                         chat_id=user_id,
                         text=msg,
                         parse_mode=ParseMode.HTML,
                     )
+                    logger.info("[broadcast]   chunk %d sent OK to user_id=%s", i + 1, user_id)
             except Exception as exc:
-                logger.error("Failed to send broadcast to %s: %s", user_id, exc)
+                logger.error("[broadcast] FAILED to send to user_id=%s: %s", user_id, exc)
+
+    logger.info("[broadcast] Broadcast complete")
 
 
 # ---- app factory ------------------------------------------------------
