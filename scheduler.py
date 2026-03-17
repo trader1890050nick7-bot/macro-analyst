@@ -9,6 +9,7 @@ Schedule (all times UTC):
 
 import asyncio
 import logging
+from datetime import datetime, timezone
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 async def job_sentiment_update() -> None:
     """Every 30 min: fetch prices + news → analyse sentiment → persist."""
-    logger.info("[scheduler] Starting sentiment update job")
+    logger.info("[scheduler] FIRED sentiment_update at %s UTC", datetime.now(timezone.utc).strftime("%H:%M:%S"))
     try:
         from data.prices import fetch_all_prices
         from data.news import fetch_all_news
@@ -35,8 +36,8 @@ async def job_sentiment_update() -> None:
 
 
 async def job_daily_brief() -> None:
-    """07:00 UTC: generate and save the daily macro brief."""
-    logger.info("[scheduler] Starting daily brief generation")
+    """18:30 UTC: generate and save the daily macro brief."""
+    logger.info("[scheduler] FIRED daily_brief at %s UTC", datetime.now(timezone.utc).strftime("%H:%M:%S"))
     try:
         from ai.brief import run_daily_brief
 
@@ -50,8 +51,8 @@ async def job_daily_brief() -> None:
 
 
 async def job_trading_ideas() -> None:
-    """07:30 UTC: generate and save trading ideas."""
-    logger.info("[scheduler] Starting trading ideas generation")
+    """18:35 UTC: generate and save trading ideas."""
+    logger.info("[scheduler] FIRED trading_ideas at %s UTC", datetime.now(timezone.utc).strftime("%H:%M:%S"))
     try:
         from ai.ideas import run_trading_ideas
 
@@ -63,7 +64,7 @@ async def job_trading_ideas() -> None:
 
 async def job_performance_check() -> None:
     """Hourly: check open trading ideas against current prices."""
-    logger.info("[scheduler] Starting performance check job")
+    logger.info("[scheduler] FIRED performance_check at %s UTC", datetime.now(timezone.utc).strftime("%H:%M:%S"))
     try:
         from data.performance import run_performance_checks
 
@@ -75,7 +76,7 @@ async def job_performance_check() -> None:
 
 async def job_broadcast(application) -> None:
     """18:40 UTC: broadcast brief + ideas to all subscribers."""
-    logger.info("[scheduler] Starting broadcast job")
+    logger.info("[scheduler] FIRED broadcast at %s UTC", datetime.now(timezone.utc).strftime("%H:%M:%S"))
     try:
         from bot.telegram_bot import broadcast_daily
 
