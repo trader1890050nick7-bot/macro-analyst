@@ -124,7 +124,7 @@ def format_idea(idea: Idea) -> str:
         f"🎯 Entry: <code>{_h(idea.entry)}</code>\n"
         f"🛑 Stop Loss: <code>{_h(idea.stop_loss)}</code>\n"
         f"✅ Take Profit: <code>{_h(idea.take_profit)}</code>\n"
-        f"⚖️ R:R Ratio: <code>{_h(idea.rr_ratio)}</code>\n"
+        f"⚖️ Risk/Reward Ratio: <code>{_h(idea.rr_ratio)}</code>\n"
         f"💡 <i>{_h(idea.reasoning)}</i>"
     )
 
