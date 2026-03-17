@@ -74,7 +74,7 @@ async def job_performance_check() -> None:
 
 
 async def job_broadcast(application) -> None:
-    """07:35 UTC: broadcast brief + ideas to all subscribers."""
+    """19:00 UTC: broadcast brief + ideas to all subscribers."""
     logger.info("[scheduler] Starting broadcast job")
     try:
         from bot.telegram_bot import broadcast_daily
