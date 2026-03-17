@@ -36,12 +36,16 @@ IDEAS_PROMPT_TEMPLATE = """Based on today's macro brief and market data, generat
 **Current Prices and Sentiments:**
 {market_data}
 
+**Direction Constraints (MUST be followed):**
+{direction_constraints}
+
 Generate exactly 3 trading ideas as a JSON array. Requirements:
 - Exactly 3 ideas
 - At least 1 idea MUST be for BTC (Bitcoin)
 - Entry, stop loss, and take profit MUST be derived from the CURRENT PRICES above — never use levels from your training knowledge
 - R:R ratio should be at least 1:1.5
 - Never write "SPX" — always write "S&P 500" in reasoning text
+- STRICTLY follow the Direction Constraints above — do not generate a direction that contradicts the sentiment
 
 Return ONLY a valid JSON array with this exact structure:
 [
@@ -58,6 +62,20 @@ Return ONLY a valid JSON array with this exact structure:
 ]
 
 No additional text, only the JSON array."""
+
+
+def _build_direction_constraints(sentiments: list[Sentiment]) -> str:
+    """Return per-asset direction rules based on sentiment scores."""
+    lines = []
+    for s in sentiments:
+        if s.score > 60:
+            rule = f"- {s.asset}: LONG only (bullish sentiment, score {s.score}/100)"
+        elif s.score < 40:
+            rule = f"- {s.asset}: SHORT only (bearish sentiment, score {s.score}/100)"
+        else:
+            rule = f"- {s.asset}: LONG or SHORT allowed (neutral sentiment, score {s.score}/100)"
+        lines.append(rule)
+    return "\n".join(lines) if lines else "No constraints — use your discretion."
 
 
 def _format_market_data(
@@ -94,10 +112,12 @@ async def generate_trading_ideas(
 ) -> list[Idea]:
     """Call Claude to generate 3 trading ideas."""
     market_data = _format_market_data(sentiments, prices)
+    direction_constraints = _build_direction_constraints(sentiments)
 
     prompt = IDEAS_PROMPT_TEMPLATE.format(
         brief=brief.content,
         market_data=market_data,
+        direction_constraints=direction_constraints,
     )
 
     try:
