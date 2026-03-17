@@ -50,7 +50,7 @@ def format_welcome() -> str:
         "/ideas — Today's 3 trading ideas\n"
         "/language — Choose your language 🌐\n"
         "/help — Show this help message\n\n"
-        "📅 Broadcast Mon–Fri at 19:05 UTC (GMT)"
+        "📅 Broadcast Mon–Fri at 18:15 UTC (GMT)"
     )
 
 
@@ -67,9 +67,9 @@ def format_help() -> str:
         "/help — This help message\n\n"
         "⏰ <b>Schedule (Mon–Fri, UTC)</b>\n"
         "• 06:30 / 12:00 / 20:00 — Sentiment update\n"
-        "• 18:45 — Daily macro brief generated\n"
-        "• 19:00 — Trading ideas generated\n"
-        "• 19:05 — Brief &amp; ideas delivered to subscribers\n\n"
+        "• 18:13 — Daily macro brief generated\n"
+        "• 18:14 — Trading ideas generated\n"
+        "• 18:15 — Brief &amp; ideas delivered to subscribers\n\n"
         "🌐 <b>Languages:</b> EN • ES • DE • RU • UZ • UK • FR • ZH"
     )
 
