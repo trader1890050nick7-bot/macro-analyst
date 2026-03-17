@@ -15,6 +15,14 @@ DIRECTION_EMOJI = {
     "SHORT": "📉",
 }
 
+TIMEFRAME_LABELS = {
+    "scalp": "scalp (1-60 мин)",
+    "intraday": "intraday (1 день)",
+    "swing": "swing (2-7 дней)",
+    "position": "position (1-4 недели)",
+}
+
+
 ASSET_EMOJI = {
     "EURUSD": "💱",
     "XAUUSD": "🥇",
@@ -121,7 +129,7 @@ def format_idea(idea: Idea) -> str:
 
     return (
         f"{asset_emoji} <b>{asset_name}</b> — {direction_emoji} <b>{idea.direction}</b>\n"
-        f"⏱ Timeframe: <code>{_h(idea.timeframe)}</code>\n"
+        f"⏱ Timeframe: <code>{_h(TIMEFRAME_LABELS.get(idea.timeframe.lower(), idea.timeframe))}</code>\n"
         f"🎯 Entry: <code>{_h(idea.entry)}</code>\n"
         f"🛑 Stop Loss: <code>{_h(idea.stop_loss)}</code>\n"
         f"✅ Take Profit: <code>{_h(idea.take_profit)}</code>\n"
