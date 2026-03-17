@@ -38,12 +38,13 @@ BRIEF_PROMPT_TEMPLATE = """Today's date is {today_date}. Write the Daily Macro B
 **Top Macro News (last 12 hours):**
 {news_block}
 
-Write a structured brief of 400–500 words covering:
+Write a structured brief covering:
 1. **Overnight Macro Events** — summarise the key overnight developments
 2. **Asset Analysis** — for each of the 5 assets, state key price levels and directional bias
 3. **Overall Risk Sentiment** — conclude with Risk-On / Risk-Off / Neutral and why
 
 Use professional financial language. Be direct and specific. Do NOT use bullet points for the main narrative — use short paragraphs.
+IMPORTANT: Keep the total brief under 400 words. Do not exceed 400 words under any circumstances.
 IMPORTANT: Use the exact asset names and tickers as given in the sentiment data (e.g. "Brent Crude (CL)", "S&P 500 (ES)", "Gold (XAUUSD)"). Be consistent — do not switch to alternative names like "crude oil", "WTI", "SPX", or "XAU" within the same section."""
 
 
@@ -78,7 +79,7 @@ async def generate_daily_brief(
     try:
         with _get_client().messages.stream(
             model=CLAUDE_MODEL,
-            max_tokens=1024,
+            max_tokens=2048,
             system=BRIEF_SYSTEM,
             messages=[{"role": "user", "content": prompt}],
         ) as stream:

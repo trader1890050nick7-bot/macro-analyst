@@ -2,7 +2,7 @@
 
 from db.models import Sentiment, Brief, Idea
 
-TELEGRAM_MAX = 3800
+TELEGRAM_MAX = 3500
 
 SENTIMENT_EMOJI = {
     "bullish": "🟢",
