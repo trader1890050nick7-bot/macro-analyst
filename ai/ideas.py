@@ -46,6 +46,7 @@ Generate exactly 3 trading ideas as a JSON array. Requirements:
 - R:R ratio should be at least 1:1.5
 - Never write "SPX" — always write "S&P 500" in reasoning text
 - STRICTLY follow the Direction Constraints above — do not generate a direction that contradicts the sentiment
+- IMPORTANT: The sentiment scores in "Current Prices and Sentiments" are the authoritative source. If the brief mentions different scores, ignore them and use only the scores from "Current Prices and Sentiments"
 
 Return ONLY a valid JSON array with this exact structure:
 [

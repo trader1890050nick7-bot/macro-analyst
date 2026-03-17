@@ -108,7 +108,8 @@ def _score_bar(score: int, width: int = 10) -> str:
 
 def format_brief(brief: Brief) -> list[str]:
     header = "📰 <b>Daily Macro Brief</b>\n\n"
-    return _split_message(header + _h(brief.content))
+    content = brief.content.replace("**", "")
+    return _split_message(header + _h(content))
 
 
 # ---- Trading ideas ----------------------------------------------------
