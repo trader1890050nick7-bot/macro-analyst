@@ -157,8 +157,12 @@ async def cmd_admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 # ---- broadcast (called by scheduler) ----------------------------------
 
-async def broadcast_daily(application: Application) -> None:
-    """Send brief + ideas to all subscribed users in their preferred language."""
+async def broadcast_daily(application: Application, force: bool = False) -> None:
+    """Send brief + ideas to all subscribed users in their preferred language.
+
+    Args:
+        force: If True, bypasses the deduplication lock (for manual triggers).
+    """
     from bot.formatter import format_broadcast
     from ai.translate import translate_text
     from collections import defaultdict
@@ -170,8 +174,9 @@ async def broadcast_daily(application: Application) -> None:
         logger.warning("Nothing to broadcast — brief and ideas both missing")
         return
 
-    # Deduplication: only one Railway instance should send the broadcast
-    if brief and brief.id is not None:
+    # Deduplication: only one Railway instance should send the broadcast.
+    # Skipped when force=True (manual trigger via API).
+    if not force and brief and brief.id is not None:
         if not db.claim_brief_for_broadcast(brief.id):
             logger.info("[broadcast] Already claimed by another instance — skipping")
             return

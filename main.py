@@ -137,13 +137,13 @@ async def trigger_ideas():
 
 
 @app.post("/trigger/broadcast")
-async def trigger_broadcast():
+async def trigger_broadcast(force: bool = False):
     from bot.telegram_bot import broadcast_daily
     from db import supabase as db
 
     subscribers = db.get_subscribed_users()
-    await broadcast_daily(_tg_application)
-    return {"triggered": "broadcast", "subscribers": len(subscribers)}
+    await broadcast_daily(_tg_application, force=force)
+    return {"triggered": "broadcast", "subscribers": len(subscribers), "force": force}
 
 
 # ---- data endpoints ---------------------------------------------------
