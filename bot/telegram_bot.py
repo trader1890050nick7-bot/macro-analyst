@@ -154,6 +154,28 @@ async def cmd_admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     stats = db.get_performance_stats()
     await update.message.reply_text(format_admin_stats(stats), parse_mode=ParseMode.HTML)
 
+    # Send equity charts
+    try:
+        from bot.charts import generate_equity_chart, generate_per_asset_chart
+        equity_trades = stats.get("equity_trades", [])
+        by_asset = stats.get("by_asset", {})
+
+        overall_img = generate_equity_chart(equity_trades)
+        if overall_img:
+            await update.message.reply_photo(
+                photo=overall_img,
+                caption="📊 Overall Equity Curve (all assets combined)",
+            )
+
+        per_asset_img = generate_per_asset_chart(by_asset, equity_trades)
+        if per_asset_img:
+            await update.message.reply_photo(
+                photo=per_asset_img,
+                caption="📊 Per-Asset Equity Curves",
+            )
+    except Exception as exc:
+        logger.error("Failed to generate admin charts: %s", exc)
+
 
 # ---- broadcast (called by scheduler) ----------------------------------
 

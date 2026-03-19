@@ -163,16 +163,28 @@ def format_admin_stats(stats: dict) -> str:
     total = stats.get("total", 0)
     tp_hit = stats.get("tp_hit", 0)
     sl_hit = stats.get("sl_hit", 0)
+    expired = stats.get("expired", 0)
     open_count = stats.get("open", 0)
     win_rate = stats.get("win_rate", 0.0)
+    total_pnl = stats.get("total_pnl", 0.0)
     by_asset = stats.get("by_asset", {})
+    stats_start = stats.get("stats_start", "2026-03-19")
     closed = tp_hit + sl_hit
 
+    starting = 50_000.0
+    equity = starting + total_pnl
+    pnl_sign = "+" if total_pnl >= 0 else ""
+    pnl_emoji = "📈" if total_pnl >= 0 else "📉"
+
     lines = [
-        "🔐 <b>Admin — Trading Ideas Performance</b>\n",
+        "🔐 <b>Admin — Trading Ideas Performance</b>",
+        f"📅 Since: <b>{stats_start}</b>\n",
         f"📊 Total ideas: <b>{total}</b>",
-        f"✅ TP Hit: <b>{tp_hit}</b>   🛑 SL Hit: <b>{sl_hit}</b>   🔄 Open: <b>{open_count}</b>",
+        f"✅ TP Hit: <b>{tp_hit}</b>   🛑 SL Hit: <b>{sl_hit}</b>   ⏰ Expired: <b>{expired}</b>   🔄 Open: <b>{open_count}</b>",
         f"🏆 Win rate: <b>{win_rate}%</b>  ({tp_hit}/{closed} closed)\n",
+        f"💰 <b>P&amp;L (MetaTrader lots, $50k start)</b>",
+        f"{pnl_emoji} Total P&amp;L: <b>{pnl_sign}${total_pnl:,.2f}</b>",
+        f"📊 Equity: <b>${equity:,.2f}</b>\n",
         "<b>By asset:</b>",
     ]
 
@@ -180,10 +192,17 @@ def format_admin_stats(stats: dict) -> str:
         s = by_asset[asset]
         emoji = ASSET_EMOJI.get(asset, "📌")
         name = ASSET_NAMES.get(asset, asset)
-        asset_closed = s["tp"] + s["sl"]
+        asset_closed = s.get("tp", 0) + s.get("sl", 0)
         wr = f"{round(s['tp'] / asset_closed * 100)}%" if asset_closed > 0 else "—"
-        lines.append(f"{emoji} {name}: ✅{s['tp']} 🛑{s['sl']} 🔄{s['open']}  WR {wr}")
+        asset_pnl = s.get("pnl", 0.0)
+        pnl_s = "+" if asset_pnl >= 0 else ""
+        lines.append(
+            f"{emoji} {name}: ✅{s.get('tp',0)} 🛑{s.get('sl',0)} "
+            f"⏰{s.get('expired',0)} 🔄{s.get('open',0)}  "
+            f"WR {wr}  P&amp;L: <b>{pnl_s}${asset_pnl:,.2f}</b>"
+        )
 
+    lines.append("\n📊 <i>Charts attached below</i>")
     return "\n".join(lines)
 
 

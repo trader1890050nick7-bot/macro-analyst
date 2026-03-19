@@ -1,8 +1,8 @@
-"""Daily Macro Brief generator — runs at 07:00 UTC.
+"""Daily Macro Brief generator — runs at 18:30 UTC.
 
-Input: sentiment of all 5 assets + top macro news last 12h
-Output: structured text 400–500 words covering:
-  - Overnight macro events
+Input: sentiment of all 5 assets + top macro news since morning (06:00 UTC)
+Output: structured text up to 400 words covering:
+  - Today's key macro events (morning through market session)
   - Each asset: key levels + bias
   - Overall risk sentiment: Risk-On / Risk-Off / Neutral
 """
@@ -28,18 +28,18 @@ def _get_client() -> anthropic.Anthropic:
     return _client
 
 
-BRIEF_SYSTEM = """You are a senior macro market strategist writing a morning market brief for professional traders. Your writing is concise, insightful, and actionable. Use precise financial language."""
+BRIEF_SYSTEM = """You are a senior macro market strategist writing an end-of-day market brief for professional traders. Your writing is concise, insightful, and actionable. Use precise financial language."""
 
 BRIEF_PROMPT_TEMPLATE = """Today's date is {today_date}. Write the Daily Macro Brief for {today_date} based on the following data.
 
 **Asset Sentiments:**
 {sentiment_block}
 
-**Top Macro News (last 12 hours):**
+**Today's Macro News (since morning, {news_hours}h window):**
 {news_block}
 
 Write a structured brief covering:
-1. **Overnight Macro Events** — summarise the key overnight developments
+1. **Today's Key Macro Events** — summarise the most important developments that occurred today during the trading session (from morning through now, not overnight)
 2. **Asset Analysis** — for each of the 5 assets, state key price levels and directional bias
 3. **Overall Risk Sentiment** — conclude with Risk-On / Risk-Off / Neutral and why
 
@@ -62,6 +62,7 @@ def _format_sentiments(sentiments: list[Sentiment]) -> str:
 async def generate_daily_brief(
     sentiments: list[Sentiment],
     macro_news: list[str],
+    news_hours: int = 13,
 ) -> Optional[Brief]:
     """Call Claude to generate the daily macro brief."""
     sentiment_block = _format_sentiments(sentiments)
@@ -75,6 +76,7 @@ async def generate_daily_brief(
         today_date=today,
         sentiment_block=sentiment_block,
         news_block=news_block,
+        news_hours=news_hours,
     )
 
     try:
@@ -112,8 +114,12 @@ async def run_daily_brief() -> Optional[Brief]:
         logger.warning("No sentiments found — skipping brief generation")
         return None
 
-    macro_news = get_top_macro_news(hours=12)
-    brief = await generate_daily_brief(sentiments, macro_news)
+    # Cover news from 06:00 UTC (morning) to now (~18:30 UTC) = ~13 hours
+    from datetime import datetime, timezone as tz
+    _now = datetime.now(tz.utc)
+    news_hours = max(12, _now.hour - 5)  # at least 12h, covering since ~06:00 UTC
+    macro_news = get_top_macro_news(hours=news_hours)
+    brief = await generate_daily_brief(sentiments, macro_news, news_hours=news_hours)
 
     if brief:
         db.save_brief(brief)

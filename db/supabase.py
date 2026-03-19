@@ -247,38 +247,126 @@ def update_idea_result(idea_id: int, result: str, result_price: float) -> None:
 
 
 def get_performance_stats() -> dict:
-    """Return aggregated performance stats across all ideas."""
+    """Return aggregated performance stats for ideas since STATS_START_DATE, with P&L."""
+    import re
     from collections import defaultdict
+    from datetime import date
 
-    response = get_client().table("ideas").select("*").execute()
+    # Track stats starting from this date
+    STATS_START_DATE = "2026-03-19"
+
+    # Position sizes in base units per asset (MetaTrader lot × contract size)
+    LOT_SIZES: dict[str, float] = {
+        "XAUUSD": 1.0,      # 100 oz/lot × 0.01 lot
+        "SPX":    0.5,      # 50 contracts/lot × 0.01 lot
+        "EURUSD": 3000.0,   # 100,000 EUR/lot × 0.03 lot
+        "BTC":    0.06,     # 1 BTC/lot × 0.06 lot
+        "BRENT":  50.0,     # 1,000 bbl/lot × 0.05 lot
+    }
+
+    def _parse_price(s: str) -> float | None:
+        cleaned = re.sub(r"[^\d.]", "", str(s).replace(",", ""))
+        try:
+            v = float(cleaned)
+            return v if v > 0 else None
+        except (ValueError, TypeError):
+            return None
+
+    def _best_entry(entry_str: str, direction: str) -> float | None:
+        parts = re.split(r"(?<=\d)-(?=\d)", str(entry_str).strip())
+        prices = [_parse_price(p) for p in parts]
+        prices = [p for p in prices if p is not None]
+        if len(prices) == 2:
+            low, high = min(prices), max(prices)
+            return low if direction == "LONG" else high
+        elif len(prices) == 1:
+            return prices[0]
+        return None
+
+    response = (
+        get_client()
+        .table("ideas")
+        .select("*")
+        .gte("created_at", STATS_START_DATE)
+        .order("created_at", desc=False)
+        .execute()
+    )
     ideas = response.data or []
 
     total = len(ideas)
     tp_hit = sum(1 for i in ideas if i.get("result") == "TP_HIT")
     sl_hit = sum(1 for i in ideas if i.get("result") == "SL_HIT")
-    open_count = sum(1 for i in ideas if i.get("result", "OPEN") == "OPEN")
+    expired = sum(1 for i in ideas if i.get("result") == "EXPIRED")
+    open_count = sum(1 for i in ideas if i.get("result") in ("OPEN", None))
     closed = tp_hit + sl_hit
     win_rate = round(tp_hit / closed * 100, 1) if closed > 0 else 0.0
 
-    by_asset: dict = defaultdict(lambda: {"total": 0, "tp": 0, "sl": 0, "open": 0})
+    by_asset: dict = defaultdict(lambda: {
+        "total": 0, "tp": 0, "sl": 0, "open": 0, "expired": 0, "pnl": 0.0,
+        "trades": [],
+    })
+
+    equity_trades: list[dict] = []  # for overall equity curve
+
     for idea in ideas:
         asset = idea.get("asset", "UNKNOWN")
+        result = idea.get("result", "OPEN")
         by_asset[asset]["total"] += 1
-        res = idea.get("result", "OPEN")
-        if res == "TP_HIT":
+
+        if result == "TP_HIT":
             by_asset[asset]["tp"] += 1
-        elif res == "SL_HIT":
+        elif result == "SL_HIT":
             by_asset[asset]["sl"] += 1
+        elif result == "EXPIRED":
+            by_asset[asset]["expired"] += 1
         else:
             by_asset[asset]["open"] += 1
+
+        # P&L for closed trades
+        if result in ("TP_HIT", "SL_HIT"):
+            result_price = idea.get("result_price")
+            entry_str = idea.get("entry", "")
+            direction = idea.get("direction", "LONG")
+            lot_size = LOT_SIZES.get(asset, 1.0)
+
+            entry_price = _best_entry(entry_str, direction)
+            r_price = _parse_price(str(result_price)) if result_price is not None else None
+
+            if entry_price and r_price:
+                if direction == "LONG":
+                    pnl = lot_size * (r_price - entry_price)
+                else:
+                    pnl = lot_size * (entry_price - r_price)
+
+                by_asset[asset]["pnl"] += pnl
+                by_asset[asset]["trades"].append({
+                    "created_at": idea.get("created_at"),
+                    "result": result,
+                    "pnl": pnl,
+                })
+                equity_trades.append({
+                    "asset": asset,
+                    "created_at": idea.get("created_at"),
+                    "result": result,
+                    "pnl": pnl,
+                })
+
+    # Sort equity trades by time
+    equity_trades.sort(key=lambda x: x.get("created_at") or "")
+
+    total_pnl = sum(t["pnl"] for t in equity_trades)
 
     return {
         "total": total,
         "tp_hit": tp_hit,
         "sl_hit": sl_hit,
+        "expired": expired,
         "open": open_count,
         "win_rate": win_rate,
-        "by_asset": dict(by_asset),
+        "total_pnl": round(total_pnl, 2),
+        "by_asset": {k: dict(v) for k, v in by_asset.items()},
+        "equity_trades": equity_trades,
+        "stats_start": STATS_START_DATE,
     }
 
 
