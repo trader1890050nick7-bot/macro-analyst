@@ -55,35 +55,41 @@ async def _fetch_eurusd() -> Optional[PriceRecord]:
 
 
 async def _fetch_gold() -> Optional[PriceRecord]:
-    # XAU/USD is treated as a currency pair by Alpha Vantage
-    data = await _av_get(
-        {"function": "CURRENCY_EXCHANGE_RATE", "from_currency": "XAU", "to_currency": "USD"}
-    )
-    info = data.get("Realtime Currency Exchange Rate", {})
-    price = float(info.get("5. Exchange Rate", 0))
+    # Gold Futures (GC=F) from Yahoo Finance — free, real-time, no API key needed.
+    # Alpha Vantage free tier returns stale XAU/USD data, so Yahoo is more reliable.
+    url = "https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF"
+    async with httpx.AsyncClient(timeout=15, headers={"User-Agent": "Mozilla/5.0"}) as client:
+        r = await client.get(url, params={"interval": "1d", "range": "2d"})
+        r.raise_for_status()
+        data = r.json()
+    result = data.get("chart", {}).get("result", [])
+    if not result:
+        return None
+    meta = result[0].get("meta", {})
+    price = float(meta.get("regularMarketPrice", 0))
+    prev_close = float(meta.get("chartPreviousClose", 0))
     if not price:
         return None
-    daily = await _av_get(
-        {"function": "FX_DAILY", "from_symbol": "XAU", "to_symbol": "USD", "outputsize": "compact"}
-    )
-    series = daily.get("Time Series FX (Daily)", {})
-    dates = sorted(series.keys(), reverse=True)
-    if len(dates) >= 2:
-        prev_close = float(series[dates[1]]["4. close"])
-        change_24h = ((price - prev_close) / prev_close) * 100
-    else:
-        change_24h = 0.0
+    change_24h = ((price - prev_close) / prev_close * 100) if prev_close else 0.0
     return PriceRecord(asset="XAUUSD", price=round(price, 2), change_24h=round(change_24h, 3))
 
 
 async def _fetch_brent() -> Optional[PriceRecord]:
-    data = await _av_get({"function": "BRENT", "interval": "daily"})
-    series = data.get("data", [])
-    if len(series) < 2:
+    # Brent Crude Futures (BZ=F) from Yahoo Finance — real-time, no API key needed.
+    url = "https://query1.finance.yahoo.com/v8/finance/chart/BZ%3DF"
+    async with httpx.AsyncClient(timeout=15, headers={"User-Agent": "Mozilla/5.0"}) as client:
+        r = await client.get(url, params={"interval": "1d", "range": "2d"})
+        r.raise_for_status()
+        data = r.json()
+    result = data.get("chart", {}).get("result", [])
+    if not result:
         return None
-    price = float(series[0]["value"])
-    prev_price = float(series[1]["value"])
-    change_24h = ((price - prev_price) / prev_price) * 100
+    meta = result[0].get("meta", {})
+    price = float(meta.get("regularMarketPrice", 0))
+    prev_close = float(meta.get("chartPreviousClose", 0))
+    if not price:
+        return None
+    change_24h = ((price - prev_close) / prev_close * 100) if prev_close else 0.0
     return PriceRecord(asset="BRENT", price=round(price, 2), change_24h=round(change_24h, 3))
 
 
