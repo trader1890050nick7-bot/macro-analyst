@@ -47,7 +47,7 @@ ASSETS: dict = {
         "news_query": "brent crude oil OPEC",
     },
     "SPX": {
-        "name": "S&P 500 (ES)",
+        "name": "E-Mini S&P 500 Futures (ES)",
         "type": "index",
         "news_query": "S&P 500 ES futures fed earnings market",
     },

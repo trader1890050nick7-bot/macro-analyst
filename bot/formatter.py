@@ -27,7 +27,7 @@ ASSET_EMOJI = {
     "EURUSD": "💱",
     "XAUUSD": "🥇",
     "BRENT": "🛢️",
-    "SPX": "📊",
+    "SPX": "📊",  # E-Mini S&P 500 Futures
     "BTC": "₿",
 }
 
@@ -35,7 +35,7 @@ ASSET_NAMES = {
     "EURUSD": "EUR/USD · EURUSD",
     "XAUUSD": "Gold · XAUUSD",
     "BRENT": "Brent Crude · CL",
-    "SPX": "S&amp;P 500 · ES",
+    "SPX": "E-Mini S&amp;P 500 Futures · ES",
     "BTC": "Bitcoin · BTCUSD",
 }
 

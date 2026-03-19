@@ -94,8 +94,8 @@ async def _fetch_brent() -> Optional[PriceRecord]:
 
 
 async def _fetch_spx() -> Optional[PriceRecord]:
-    # Fetch S&P 500 index (^GSPC) directly from Yahoo Finance — no API key needed
-    url = "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC"
+    # Fetch E-Mini S&P 500 Futures (ES=F) from Yahoo Finance — no API key needed
+    url = "https://query1.finance.yahoo.com/v8/finance/chart/ES%3DF"
     async with httpx.AsyncClient(timeout=15, headers={"User-Agent": "Mozilla/5.0"}) as client:
         r = await client.get(url, params={"interval": "1d", "range": "2d"})
         r.raise_for_status()

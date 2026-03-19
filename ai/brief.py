@@ -46,7 +46,7 @@ Write a structured brief covering:
 Use professional financial language. Be direct and specific. Do NOT use bullet points for the main narrative — use short paragraphs.
 IMPORTANT: Keep the total brief under 400 words. Do not exceed 400 words under any circumstances.
 IMPORTANT: Do NOT use markdown bold formatting (**text**). Do not wrap asset names or any other text in asterisks.
-IMPORTANT: Use the exact asset names and tickers as given in the sentiment data (e.g. "Brent Crude (CL)", "S&P 500 (ES)", "Gold (XAUUSD)"). Be consistent — do not switch to alternative names like "crude oil", "WTI", "SPX", or "XAU" within the same section."""
+IMPORTANT: Use the exact asset names and tickers as given in the sentiment data (e.g. "Brent Crude (CL)", "E-Mini S&P 500 Futures (ES)", "Gold (XAUUSD)"). Be consistent — do not switch to alternative names like "crude oil", "WTI", "SPX", "S&P 500", or "XAU" within the same section."""
 
 
 def _format_sentiments(sentiments: list[Sentiment]) -> str:
