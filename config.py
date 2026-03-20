@@ -26,10 +26,7 @@ try:
 except ValueError:
     ADMIN_TELEGRAM_ID = None
 
-import logging as _logging
-_logging.getLogger(__name__).info(
-    "ADMIN_TELEGRAM_ID raw=%r parsed=%s", os.getenv("ADMIN_TELEGRAM_ID"), ADMIN_TELEGRAM_ID
-)
+print(f"[config] ADMIN_TELEGRAM_ID raw={os.getenv('ADMIN_TELEGRAM_ID')!r} parsed={ADMIN_TELEGRAM_ID}", flush=True)
 
 # Claude model
 CLAUDE_MODEL: str = "claude-haiku-4-5-20251001"
