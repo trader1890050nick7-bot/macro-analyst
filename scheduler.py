@@ -1,10 +1,10 @@
 """APScheduler jobs.
 
 Schedule (all times UTC):
-  - 06:30, 12:00, 20:00 : fetch prices + news → run sentiment → save to DB
-  - 18:30 daily         : generate macro brief → save to DB
-  - 18:35 daily         : generate trading ideas → save to DB
-  - 18:40 daily         : send brief + ideas to all subscribed Telegram users
+  - 07:00, 13:00, 18:00 : fetch prices + news → run sentiment → save to DB
+  - 18:02 daily         : generate macro brief → save to DB
+  - 18:04 daily         : generate trading ideas → save to DB
+  - 18:05 daily         : send brief + ideas to all subscribed Telegram users
 """
 
 import asyncio
@@ -91,61 +91,61 @@ async def job_broadcast(application) -> None:
 def create_scheduler(application) -> AsyncIOScheduler:
     scheduler = AsyncIOScheduler(timezone="UTC")
 
-    # 06:30 UTC Mon–Fri — morning sentiment update (weekdays only)
+    # 07:00 UTC Mon–Fri — morning sentiment update
     scheduler.add_job(
         job_sentiment_update,
-        trigger=CronTrigger(hour=6, minute=30, day_of_week="mon-fri", timezone="UTC"),
+        trigger=CronTrigger(hour=7, minute=0, day_of_week="mon-fri", timezone="UTC"),
         id="sentiment_morning",
         name="Sentiment Update (Morning)",
         replace_existing=True,
         misfire_grace_time=300,
     )
 
-    # 12:00 UTC every day — midday sentiment update (weekdays 2nd run / weekends only run)
+    # 13:00 UTC Mon–Fri — midday sentiment update
     scheduler.add_job(
         job_sentiment_update,
-        trigger=CronTrigger(hour=12, minute=0, timezone="UTC"),
+        trigger=CronTrigger(hour=13, minute=0, day_of_week="mon-fri", timezone="UTC"),
         id="sentiment_midday",
         name="Sentiment Update (Midday)",
         replace_existing=True,
         misfire_grace_time=300,
     )
 
-    # 20:00 UTC Mon–Fri — evening sentiment update (weekdays only)
+    # 18:00 UTC Mon–Fri — pre-brief sentiment update (fresh prices for today's session)
     scheduler.add_job(
         job_sentiment_update,
-        trigger=CronTrigger(hour=20, minute=0, day_of_week="mon-fri", timezone="UTC"),
+        trigger=CronTrigger(hour=18, minute=0, day_of_week="mon-fri", timezone="UTC"),
         id="sentiment_evening",
         name="Sentiment Update (Evening)",
         replace_existing=True,
         misfire_grace_time=300,
     )
 
-    # 18:30 UTC Mon–Fri — macro brief
+    # 18:02 UTC Mon–Fri — macro brief (uses 18:00 sentiment = today's prices)
     scheduler.add_job(
         job_daily_brief,
-        trigger=CronTrigger(hour=18, minute=30, day_of_week="mon-fri", timezone="UTC"),
+        trigger=CronTrigger(hour=18, minute=2, day_of_week="mon-fri", timezone="UTC"),
         id="daily_brief",
         name="Daily Brief",
         replace_existing=True,
         misfire_grace_time=300,
     )
 
-    # 18:35 UTC Mon–Fri — trading ideas
+    # 18:04 UTC Mon–Fri — trading ideas
     scheduler.add_job(
         job_trading_ideas,
-        trigger=CronTrigger(hour=18, minute=35, day_of_week="mon-fri", timezone="UTC"),
+        trigger=CronTrigger(hour=18, minute=4, day_of_week="mon-fri", timezone="UTC"),
         id="trading_ideas",
         name="Trading Ideas",
         replace_existing=True,
         misfire_grace_time=300,
     )
 
-    # 18:40 UTC Mon–Fri — Telegram broadcast
+    # 18:05 UTC Mon–Fri — Telegram broadcast
     scheduler.add_job(
         job_broadcast,
         args=[application],
-        trigger=CronTrigger(hour=18, minute=40, day_of_week="mon-fri", timezone="UTC"),
+        trigger=CronTrigger(hour=18, minute=5, day_of_week="mon-fri", timezone="UTC"),
         id="broadcast",
         name="Telegram Broadcast",
         replace_existing=True,

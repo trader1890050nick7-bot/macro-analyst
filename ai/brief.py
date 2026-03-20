@@ -114,7 +114,7 @@ async def run_daily_brief() -> Optional[Brief]:
         logger.warning("No sentiments found — skipping brief generation")
         return None
 
-    # Cover news from 06:00 UTC (morning) to now (~18:30 UTC) = ~13 hours
+    # Cover news from ~05:00 UTC (morning) to now (~18:10 UTC) = ~13 hours
     from datetime import datetime, timezone as tz
     _now = datetime.now(tz.utc)
     news_hours = max(12, _now.hour - 5)  # at least 12h, covering since ~06:00 UTC
