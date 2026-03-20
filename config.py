@@ -20,8 +20,16 @@ SUPABASE_URL: str = _require("SUPABASE_URL")
 SUPABASE_KEY: str = _require("SUPABASE_KEY")
 
 # Admin Telegram ID for /admin_stats (optional — bot still works without it)
-_admin_raw = os.getenv("ADMIN_TELEGRAM_ID", "").strip()
-ADMIN_TELEGRAM_ID: Optional[int] = int(_admin_raw) if _admin_raw.isdigit() else None
+_admin_raw = os.getenv("ADMIN_TELEGRAM_ID", "").strip().strip('"').strip("'")
+try:
+    ADMIN_TELEGRAM_ID: Optional[int] = int(_admin_raw) if _admin_raw else None
+except ValueError:
+    ADMIN_TELEGRAM_ID = None
+
+import logging as _logging
+_logging.getLogger(__name__).info(
+    "ADMIN_TELEGRAM_ID raw=%r parsed=%s", os.getenv("ADMIN_TELEGRAM_ID"), ADMIN_TELEGRAM_ID
+)
 
 # Claude model
 CLAUDE_MODEL: str = "claude-haiku-4-5-20251001"
