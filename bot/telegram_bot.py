@@ -148,9 +148,15 @@ async def callback_language(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 async def cmd_admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
-    if not ADMIN_TELEGRAM_ID or user_id != ADMIN_TELEGRAM_ID:
+    logger.info("[admin_stats] Called by user_id=%s, ADMIN_TELEGRAM_ID=%s", user_id, ADMIN_TELEGRAM_ID)
+
+    if not ADMIN_TELEGRAM_ID:
+        await update.message.reply_text("⚠️ ADMIN_TELEGRAM_ID env var is not set on the server.")
+        return
+    if user_id != ADMIN_TELEGRAM_ID:
         return  # Silent ignore for non-admins
 
+    await update.message.reply_text("⏳ Generating stats...")
     stats = db.get_performance_stats()
     await update.message.reply_text(format_admin_stats(stats), parse_mode=ParseMode.HTML)
 
