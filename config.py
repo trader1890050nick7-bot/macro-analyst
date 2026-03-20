@@ -20,7 +20,7 @@ SUPABASE_URL: str = _require("SUPABASE_URL")
 SUPABASE_KEY: str = _require("SUPABASE_KEY")
 
 # Admin Telegram ID for /admin_stats (optional — bot still works without it)
-_admin_raw = os.getenv("ADMIN_TELEGRAM_ID", "")
+_admin_raw = os.getenv("ADMIN_TELEGRAM_ID", "").strip()
 ADMIN_TELEGRAM_ID: Optional[int] = int(_admin_raw) if _admin_raw.isdigit() else None
 
 # Claude model
