@@ -26,6 +26,8 @@ try:
 except ValueError:
     ADMIN_TELEGRAM_ID = None
 
+_env_keys = [k for k in os.environ if "ADMIN" in k or "TELEGRAM" in k]
+print(f"[config] env keys with ADMIN/TELEGRAM: {_env_keys}", flush=True)
 print(f"[config] ADMIN_TELEGRAM_ID raw={os.getenv('ADMIN_TELEGRAM_ID')!r} parsed={ADMIN_TELEGRAM_ID}", flush=True)
 
 # Claude model
