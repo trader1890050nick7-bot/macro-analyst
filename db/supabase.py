@@ -71,6 +71,40 @@ def update_user_language(telegram_id: int, language: str) -> None:
     get_client().table("users").update({"language": language}).eq("telegram_id", telegram_id).execute()
 
 
+def check_and_increment_lang_change(telegram_id: int, limit: int = 3) -> bool:
+    """Return True if language change is allowed, and increment counter. False if limit reached."""
+    now = datetime.now(timezone.utc)
+    response = (
+        get_client()
+        .table("users")
+        .select("lang_changes_today, lang_changes_reset")
+        .eq("telegram_id", telegram_id)
+        .limit(1)
+        .execute()
+    )
+    if not response.data:
+        return True  # new user, allow
+
+    row = response.data[0]
+    count = row.get("lang_changes_today") or 0
+    reset_raw = row.get("lang_changes_reset")
+    reset_at = datetime.fromisoformat(reset_raw) if reset_raw else now
+
+    # Reset counter if 24 hours have passed
+    if (now - reset_at) >= timedelta(hours=24):
+        count = 0
+        reset_at = now
+
+    if count >= limit:
+        return False
+
+    get_client().table("users").update({
+        "lang_changes_today": count + 1,
+        "lang_changes_reset": reset_at.isoformat(),
+    }).eq("telegram_id", telegram_id).execute()
+    return True
+
+
 # ---- prices -----------------------------------------------------------
 
 def save_price(record: PriceRecord) -> None:

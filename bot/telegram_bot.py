@@ -139,6 +139,13 @@ async def callback_language(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     lang_code = query.data.replace("lang_", "")
     if lang_code not in LANGUAGES:
         return
+
+    if not db.check_and_increment_lang_change(query.from_user.id):
+        await query.edit_message_text(
+            "⚠️ You can change language 3 times per day. Try again tomorrow."
+        )
+        return
+
     db.update_user_language(query.from_user.id, lang_code)
     lang_name = LANGUAGES[lang_code]
     await query.edit_message_text(f"✅ Language set to {lang_name}")
