@@ -1,5 +1,6 @@
 """Translate bot content to a user's preferred language using Claude."""
 
+import hashlib
 import logging
 from typing import Optional
 
@@ -31,9 +32,21 @@ def _get_client() -> anthropic.AsyncAnthropic:
 
 
 async def translate_text(text: str, target_lang: str) -> str:
-    """Translate HTML-formatted text to target_lang. Returns original on error or if lang=en."""
+    """Translate HTML-formatted text to target_lang. Returns original on error or if lang=en.
+
+    Results are cached in Supabase for 3 hours to avoid duplicate Claude API calls.
+    """
     if target_lang == "en" or not target_lang:
         return text
+
+    from db import supabase as db
+
+    cache_key = hashlib.md5(f"{target_lang}:{text}".encode()).hexdigest()
+
+    cached = db.get_cached_translation(cache_key)
+    if cached:
+        logger.debug("Translation cache hit for lang=%s key=%s", target_lang, cache_key[:8])
+        return cached
 
     lang_name = LANGUAGE_NAMES.get(target_lang, target_lang)
 
@@ -53,7 +66,9 @@ async def translate_text(text: str, target_lang: str) -> str:
         ) as stream:
             response = await stream.get_final_message()
 
-        return response.content[0].text.strip()
+        translated = response.content[0].text.strip()
+        db.save_cached_translation(cache_key, translated)
+        return translated
 
     except Exception as exc:
         logger.error("Translation to %s failed: %s", target_lang, exc)

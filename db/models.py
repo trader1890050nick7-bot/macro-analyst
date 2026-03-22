@@ -124,4 +124,10 @@ class Idea(BaseModel):
 #   ALTER TABLE ideas ADD COLUMN IF NOT EXISTS result TEXT DEFAULT 'OPEN';
 #   ALTER TABLE ideas ADD COLUMN IF NOT EXISTS result_price NUMERIC;
 #   ALTER TABLE ideas ADD COLUMN IF NOT EXISTS checked_at TIMESTAMPTZ;
+#
+# CREATE TABLE IF NOT EXISTS translation_cache (
+#     cache_key   TEXT PRIMARY KEY,
+#     translated  TEXT NOT NULL,
+#     created_at  TIMESTAMPTZ DEFAULT NOW()
+# );
 # -----------------------------------------------------------------------

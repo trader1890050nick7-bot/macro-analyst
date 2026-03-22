@@ -370,6 +370,35 @@ def get_performance_stats() -> dict:
     }
 
 
+# ---- translation cache ------------------------------------------------
+
+TRANSLATION_CACHE_TTL_HOURS = 3
+
+
+def get_cached_translation(cache_key: str) -> Optional[str]:
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=TRANSLATION_CACHE_TTL_HOURS)
+    response = (
+        get_client()
+        .table("translation_cache")
+        .select("translated")
+        .eq("cache_key", cache_key)
+        .gte("created_at", cutoff.isoformat())
+        .limit(1)
+        .execute()
+    )
+    if response.data:
+        return response.data[0]["translated"]
+    return None
+
+
+def save_cached_translation(cache_key: str, translated: str) -> None:
+    get_client().table("translation_cache").upsert({
+        "cache_key": cache_key,
+        "translated": translated,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }).execute()
+
+
 def get_latest_ideas() -> list[Idea]:
     """Return today's trading ideas (up to 3)."""
     start_of_day = datetime.now(timezone.utc).replace(
