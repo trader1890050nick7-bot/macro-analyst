@@ -113,22 +113,22 @@ async def _fetch_spx() -> Optional[PriceRecord]:
 
 
 async def _fetch_btc() -> Optional[PriceRecord]:
-    async with httpx.AsyncClient(timeout=15) as client:
-        r = await client.get(
-            f"{COINGECKO_BASE}/simple/price",
-            params={
-                "ids": "bitcoin",
-                "vs_currencies": "usd",
-                "include_24hr_change": "true",
-            },
-        )
+    # BTC-USD from Yahoo Finance — uses chartPreviousClose (previous session close)
+    # so change_24h reflects day-over-day move, consistent with other assets.
+    url = "https://query1.finance.yahoo.com/v8/finance/chart/BTC-USD"
+    async with httpx.AsyncClient(timeout=15, headers={"User-Agent": "Mozilla/5.0"}) as client:
+        r = await client.get(url, params={"interval": "1d", "range": "2d"})
         r.raise_for_status()
         data = r.json()
-    btc = data.get("bitcoin", {})
-    price = btc.get("usd", 0)
-    change_24h = btc.get("usd_24h_change", 0)
+    result = data.get("chart", {}).get("result", [])
+    if not result:
+        return None
+    meta = result[0].get("meta", {})
+    price = float(meta.get("regularMarketPrice", 0))
+    prev_close = float(meta.get("chartPreviousClose", 0))
     if not price:
         return None
+    change_24h = ((price - prev_close) / prev_close * 100) if prev_close else 0.0
     return PriceRecord(asset="BTC", price=round(price, 2), change_24h=round(change_24h, 3))
 
 
