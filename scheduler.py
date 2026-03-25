@@ -2,7 +2,7 @@
 
 Schedule (all times UTC):
   - 00:01 daily         : fetch prices + news → run sentiment → save to DB (day-open reference)
-  - 07:00, 12:00, 18:00 : fetch prices + news → run sentiment → save to DB
+  - 12:00, 18:00 UTC    : fetch prices + news → run sentiment → save to DB
   - 18:02 daily         : generate macro brief → save to DB
   - 18:04 daily         : generate trading ideas → save to DB
   - 18:05 daily         : send brief + ideas to all subscribed Telegram users
@@ -98,16 +98,6 @@ def create_scheduler(application) -> AsyncIOScheduler:
         trigger=CronTrigger(hour=0, minute=1, timezone="UTC"),
         id="sentiment_day_open",
         name="Sentiment Update (Day Open)",
-        replace_existing=True,
-        misfire_grace_time=300,
-    )
-
-    # 07:00 UTC Mon–Fri — morning sentiment update
-    scheduler.add_job(
-        job_sentiment_update,
-        trigger=CronTrigger(hour=7, minute=0, day_of_week="mon-fri", timezone="UTC"),
-        id="sentiment_morning",
-        name="Sentiment Update (Morning)",
         replace_existing=True,
         misfire_grace_time=300,
     )
