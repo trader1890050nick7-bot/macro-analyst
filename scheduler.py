@@ -1,7 +1,8 @@
 """APScheduler jobs.
 
 Schedule (all times UTC):
-  - 07:00, 13:00, 18:00 : fetch prices + news → run sentiment → save to DB
+  - 00:01 daily         : fetch prices + news → run sentiment → save to DB (day-open reference)
+  - 07:00, 12:00, 13:00, 18:00 : fetch prices + news → run sentiment → save to DB
   - 18:02 daily         : generate macro brief → save to DB
   - 18:04 daily         : generate trading ideas → save to DB
   - 18:05 daily         : send brief + ideas to all subscribed Telegram users
@@ -91,6 +92,16 @@ async def job_broadcast(application) -> None:
 def create_scheduler(application) -> AsyncIOScheduler:
     scheduler = AsyncIOScheduler(timezone="UTC")
 
+    # 00:01 UTC daily — day-open sentiment + price snapshot (reference for evening % change)
+    scheduler.add_job(
+        job_sentiment_update,
+        trigger=CronTrigger(hour=0, minute=1, timezone="UTC"),
+        id="sentiment_day_open",
+        name="Sentiment Update (Day Open)",
+        replace_existing=True,
+        misfire_grace_time=300,
+    )
+
     # 07:00 UTC Mon–Fri — morning sentiment update
     scheduler.add_job(
         job_sentiment_update,
@@ -101,12 +112,22 @@ def create_scheduler(application) -> AsyncIOScheduler:
         misfire_grace_time=300,
     )
 
-    # 13:00 UTC Mon–Fri — midday sentiment update
+    # 12:00 UTC Mon–Fri — midday sentiment update
+    scheduler.add_job(
+        job_sentiment_update,
+        trigger=CronTrigger(hour=12, minute=0, day_of_week="mon-fri", timezone="UTC"),
+        id="sentiment_midday",
+        name="Sentiment Update (Midday)",
+        replace_existing=True,
+        misfire_grace_time=300,
+    )
+
+    # 13:00 UTC Mon–Fri — afternoon sentiment update
     scheduler.add_job(
         job_sentiment_update,
         trigger=CronTrigger(hour=13, minute=0, day_of_week="mon-fri", timezone="UTC"),
-        id="sentiment_midday",
-        name="Sentiment Update (Midday)",
+        id="sentiment_afternoon",
+        name="Sentiment Update (Afternoon)",
         replace_existing=True,
         misfire_grace_time=300,
     )

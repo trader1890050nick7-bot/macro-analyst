@@ -32,7 +32,7 @@ BRIEF_SYSTEM = """You are a senior macro market strategist writing an end-of-day
 
 BRIEF_PROMPT_TEMPLATE = """Today's date is {today_date}. Write the Daily Macro Brief for {today_date} based on the following data.
 
-**Current Prices at brief time (% change vs previous day's close):**
+**Current Prices at brief time (% change vs day open at 00:01 UTC):**
 {price_block}
 
 **Asset Sentiments:**
@@ -50,7 +50,7 @@ Use professional financial language. Be direct and specific. Do NOT use bullet p
 IMPORTANT: Keep the total brief under 400 words. Do not exceed 400 words under any circumstances.
 IMPORTANT: Do NOT use markdown bold formatting (**text**). Do not wrap asset names or any other text in asterisks.
 IMPORTANT: Use the exact asset names and tickers as given in the sentiment data (e.g. "Brent Crude (CL)", "E-Mini S&P 500 Futures (ES)", "Gold (XAUUSD)"). Be consistent — do not switch to alternative names like "crude oil", "WTI", "SPX", "S&P 500", or "XAU" within the same section.
-IMPORTANT: When stating price changes for each asset, use ONLY the % change vs previous day's close from the "Current Prices" section above. Do not use any % figures from the sentiment reasoning — those may be stale."""
+IMPORTANT: When stating price changes for each asset, use ONLY the % change vs day open from the "Current Prices" section above. Do not use any % figures from the sentiment reasoning — those may be stale."""
 
 
 def _format_sentiments(sentiments: list[Sentiment]) -> str:
@@ -63,17 +63,22 @@ def _format_sentiments(sentiments: list[Sentiment]) -> str:
     return "\n".join(lines) if lines else "No sentiment data available."
 
 
-def _format_prices(prices: dict) -> str:
+def _format_prices(prices: dict, day_open_prices: dict | None = None) -> str:
     from config import ASSETS
     lines = []
     for asset_key, record in prices.items():
         if record is None:
             continue
         name = ASSETS.get(asset_key, {}).get("name", asset_key)
-        sign = "+" if record.change_24h >= 0 else ""
-        lines.append(
-            f"- {name}: {record.price} ({sign}{record.change_24h:.2f}% vs prev close)"
-        )
+        open_record = (day_open_prices or {}).get(asset_key)
+        if open_record and open_record.price:
+            change = (record.price - open_record.price) / open_record.price * 100
+            ref = f"open {open_record.price}"
+        else:
+            change = record.change_24h
+            ref = "prev close"
+        sign = "+" if change >= 0 else ""
+        lines.append(f"- {name}: {record.price} ({sign}{change:.2f}% vs {ref})")
     return "\n".join(lines) if lines else "Price data unavailable."
 
 
@@ -81,11 +86,12 @@ async def generate_daily_brief(
     sentiments: list[Sentiment],
     macro_news: list[str],
     prices: dict | None = None,
+    day_open_prices: dict | None = None,
     news_hours: int = 13,
 ) -> Optional[Brief]:
     """Call Claude to generate the daily macro brief."""
     sentiment_block = _format_sentiments(sentiments)
-    price_block = _format_prices(prices) if prices else "Price data unavailable."
+    price_block = _format_prices(prices, day_open_prices) if prices else "Price data unavailable."
     news_block = (
         "\n".join(f"• {headline}" for headline in macro_news[:15])
         or "No recent macro news available."
@@ -136,15 +142,22 @@ async def run_daily_brief() -> Optional[Brief]:
         logger.warning("No sentiments found — skipping brief generation")
         return None
 
-    # Fetch fresh prices at brief time so % change vs prev close is current
+    # Fetch fresh prices at brief time (current levels)
     prices = await fetch_all_prices(force=True)
+
+    # Fetch day-open prices (saved by 00:01 UTC job) as % change reference
+    day_open_prices = db.get_day_open_prices()
 
     # Cover news from ~05:00 UTC (morning) to now (~18:10 UTC) = ~13 hours
     from datetime import datetime, timezone as tz
     _now = datetime.now(tz.utc)
     news_hours = max(12, _now.hour - 5)  # at least 12h, covering since ~06:00 UTC
     macro_news = get_top_macro_news(hours=news_hours)
-    brief = await generate_daily_brief(sentiments, macro_news, prices=prices, news_hours=news_hours)
+    brief = await generate_daily_brief(
+        sentiments, macro_news,
+        prices=prices, day_open_prices=day_open_prices,
+        news_hours=news_hours,
+    )
 
     if brief:
         db.save_brief(brief)

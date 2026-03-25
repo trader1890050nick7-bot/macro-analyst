@@ -127,6 +127,31 @@ def get_latest_price(asset: str) -> Optional[PriceRecord]:
     return PriceRecord(**row)
 
 
+def get_day_open_prices() -> dict:
+    """Return the first price record saved today (UTC) for each asset.
+
+    The 00:01 UTC job saves these; they serve as the day-open reference for
+    calculating % change in the evening brief.
+    """
+    from config import ASSETS
+
+    start_of_day = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    results: dict = {}
+    for asset_key in ASSETS:
+        response = (
+            get_client()
+            .table("prices")
+            .select("*")
+            .eq("asset", asset_key)
+            .gte("created_at", start_of_day.isoformat())
+            .order("created_at", desc=False)
+            .limit(1)
+            .execute()
+        )
+        results[asset_key] = PriceRecord(**response.data[0]) if response.data else None
+    return results
+
+
 def is_price_fresh(asset: str) -> bool:
     """Return True if a price record exists that is younger than CACHE_TTL_MINUTES."""
     cutoff = datetime.now(timezone.utc) - timedelta(minutes=CACHE_TTL_MINUTES)
