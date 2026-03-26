@@ -46,7 +46,7 @@ ASSETS: dict = {
         "news_query": "gold XAU fed dollar inflation",
     },
     "BRENT": {
-        "name": "Brent Crude (CL)",
+        "name": "Brent Crude (BRN)",
         "type": "commodity",
         "news_query": "brent crude oil OPEC",
     },
