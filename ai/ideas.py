@@ -62,7 +62,8 @@ Return ONLY a valid JSON array with this exact structure:
   }}
 ]
 
-No additional text, only the JSON array."""
+No additional text, only the JSON array.
+IMPORTANT: Gold (XAUUSD) is grammatically neuter in Russian — always use neuter gender in reasoning: "выросло", "упало", "торгуется" etc. Never use feminine forms like "выросла", "упала"."""
 
 
 def _build_direction_constraints(sentiments: list[Sentiment]) -> str:
