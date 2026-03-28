@@ -28,7 +28,7 @@ def _get_client() -> anthropic.Anthropic:
     return _client
 
 
-BRIEF_SYSTEM = """You are a senior macro market strategist writing an end-of-day market brief for professional traders. Your writing is concise, insightful, and actionable. Use precise financial language."""
+BRIEF_SYSTEM = """You are a market analyst writing an end-of-day market brief for regular people who are interested in financial markets but are not professional traders. Your writing is clear, simple, and easy to understand. Avoid jargon — explain things in plain everyday language, as if talking to a smart friend who doesn't work in finance."""
 
 BRIEF_PROMPT_TEMPLATE = """Today's date is {today_date}. Write the Daily Macro Brief for {today_date} based on the following data.
 
@@ -46,7 +46,7 @@ Write a structured brief covering:
 2. **Asset Analysis** — for each of the 5 assets, state key price levels and directional bias
 3. **Overall Risk Sentiment** — conclude with Risk-On / Risk-Off / Neutral and why
 
-Use professional financial language. Be direct and specific. Do NOT use bullet points for the main narrative — use short paragraphs.
+Write in simple, plain language that anyone can understand — no jargon, no technical terms. Instead of phrases like "erosion of support signals disruption of technical structure", say something like "if gold falls below $X, that's a warning sign it could drop further". Be direct and specific. Do NOT use bullet points for the main narrative — use short paragraphs.
 IMPORTANT: Keep the total brief under 400 words. Do not exceed 400 words under any circumstances.
 IMPORTANT: Do NOT use markdown bold formatting (**text**). Do not wrap asset names or any other text in asterisks.
 IMPORTANT: Use the exact asset names and tickers as given in the sentiment data (e.g. "Brent Crude (BRN)", "E-Mini S&P 500 Futures (ES)", "Gold (XAUUSD)"). Be consistent — do not switch to alternative names like "crude oil", "WTI", "SPX", "S&P 500", or "XAU" within the same section.
