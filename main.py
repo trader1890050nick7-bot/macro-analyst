@@ -17,11 +17,12 @@ REST endpoints (for health checks & manual triggers):
 """
 
 import asyncio
+import json
 import logging
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from telegram.error import Conflict
 
@@ -172,6 +173,71 @@ async def get_ideas():
 
     ideas = db.get_latest_ideas()
     return {"ideas": [i.model_dump() for i in ideas]}
+
+
+# ---- NOWPayments IPN webhook ------------------------------------------
+
+PAYMENT_CONFIRMED_STATUSES = {"confirmed", "sending", "finished"}
+
+
+@app.post("/webhook/nowpayments")
+async def webhook_nowpayments(request: Request):
+    from payments.nowpayments import verify_ipn_signature
+    from db import supabase as db
+    from config import SUBSCRIPTION_DAYS
+
+    raw_body = await request.body()
+    sig = request.headers.get("x-nowpayments-sig", "")
+
+    if not verify_ipn_signature(raw_body, sig):
+        logger.warning("[nowpayments] IPN signature mismatch — rejected")
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    data = json.loads(raw_body)
+    nowpayments_id = str(data.get("payment_id", ""))
+    status = data.get("payment_status", "")
+    order_id = str(data.get("order_id", ""))
+
+    logger.info("[nowpayments] IPN: payment_id=%s status=%s order_id=%s", nowpayments_id, status, order_id)
+
+    if nowpayments_id:
+        db.update_payment_status(nowpayments_id, status)
+
+    if status not in PAYMENT_CONFIRMED_STATUSES:
+        return {"ok": True}
+
+    # Idempotency: only activate once per payment
+    payment_row = db.get_payment_by_nowpayments_id(nowpayments_id)
+    if payment_row and payment_row.get("status") in PAYMENT_CONFIRMED_STATUSES:
+        logger.info("[nowpayments] Payment %s already processed — skipping", nowpayments_id)
+        return {"ok": True}
+
+    # Get telegram_id from order_id (set to str(telegram_id) on payment creation)
+    try:
+        telegram_id = int(order_id)
+    except (ValueError, TypeError):
+        logger.error("[nowpayments] Cannot parse telegram_id from order_id=%s", order_id)
+        return {"ok": True}
+
+    new_expiry = db.activate_subscription(telegram_id, days=SUBSCRIPTION_DAYS)
+    logger.info("[nowpayments] Subscription activated for user %s until %s", telegram_id, new_expiry)
+
+    # Notify user via Telegram
+    if _tg_application:
+        try:
+            await _tg_application.bot.send_message(
+                chat_id=telegram_id,
+                text=(
+                    "🎉 <b>Payment confirmed!</b>\n\n"
+                    f"Your subscription is active until <b>{new_expiry.strftime('%B %d, %Y')}</b>.\n\n"
+                    "You now have access to /brief, /sentiment and /ideas. Enjoy! 📈"
+                ),
+                parse_mode="HTML",
+            )
+        except Exception as exc:
+            logger.error("[nowpayments] Failed to notify user %s: %s", telegram_id, exc)
+
+    return {"ok": True}
 
 
 # ---- entry point ------------------------------------------------------

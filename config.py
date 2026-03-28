@@ -19,6 +19,12 @@ TELEGRAM_BOT_TOKEN: str = _require("TELEGRAM_BOT_TOKEN")
 SUPABASE_URL: str = _require("SUPABASE_URL")
 SUPABASE_KEY: str = _require("SUPABASE_KEY")
 
+NOWPAYMENTS_API_KEY: str = _require("NOWPAYMENTS_API_KEY")
+NOWPAYMENTS_IPN_SECRET: Optional[str] = os.getenv("NOWPAYMENTS_IPN_SECRET")
+
+SUBSCRIPTION_PRICE_USD: float = 19.0
+SUBSCRIPTION_DAYS: int = 30
+
 # Admin Telegram ID for /admin_stats (optional — bot still works without it)
 _admin_raw = os.getenv("ADMIN_TELEGRAM_ID", "").strip().strip('"').strip("'")
 try:

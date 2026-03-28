@@ -8,6 +8,7 @@ Commands:
   /help     — Command list
 """
 
+import functools
 import logging
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -27,6 +28,8 @@ from bot.formatter import (
     format_brief,
     format_all_ideas,
     format_admin_stats,
+    format_subscribe_required,
+    format_subscribe_info,
 )
 from db import supabase as db
 
@@ -42,6 +45,23 @@ LANGUAGES = {
 }
 
 logger = logging.getLogger(__name__)
+
+
+# ---- subscription gate ------------------------------------------------
+
+def _require_subscription(func):
+    """Decorator: block command for users without an active subscription."""
+    @functools.wraps(func)
+    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user_id = update.effective_user.id
+        if not db.is_premium(user_id):
+            await update.message.reply_text(
+                format_subscribe_required(),
+                parse_mode=ParseMode.HTML,
+            )
+            return
+        return await func(update, context)
+    return wrapper
 
 
 # ---- helpers ----------------------------------------------------------
@@ -90,6 +110,7 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
 
 
+@_require_subscription
 async def cmd_brief(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("⏳ Fetching today's brief...")
 
@@ -103,6 +124,7 @@ async def cmd_brief(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await _send_translated(update, format_brief(brief))
 
 
+@_require_subscription
 async def cmd_sentiment(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("📡 Fetching latest sentiments...")
 
@@ -110,6 +132,7 @@ async def cmd_sentiment(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await _send_translated(update, format_all_sentiments(sentiments))
 
 
+@_require_subscription
 async def cmd_ideas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("💡 Fetching today's trading ideas...")
 
@@ -149,6 +172,57 @@ async def callback_language(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     db.update_user_language(query.from_user.id, lang_code)
     lang_name = LANGUAGES[lang_code]
     await query.edit_message_text(f"✅ Language set to {lang_name}")
+
+
+# ---- subscription commands --------------------------------------------
+
+async def cmd_subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.effective_user.id
+    try:
+        db.upsert_user(user_id, subscribed=True)
+    except Exception as exc:
+        logger.error("Failed to upsert user %s: %s", user_id, exc)
+
+    # Show current status if already subscribed
+    from datetime import datetime, timezone
+    expiry = db.get_subscription_expiry(user_id)
+    if expiry and expiry > datetime.now(timezone.utc):
+        days_left = (expiry - datetime.now(timezone.utc)).days
+        await update.message.reply_text(
+            f"✅ <b>You already have an active subscription!</b>\n\n"
+            f"Expires: <b>{expiry.strftime('%B %d, %Y')}</b> ({days_left} days left)\n\n"
+            f"To extend for another 30 days, make another payment using /subscribe.",
+            parse_mode=ParseMode.HTML,
+        )
+        return
+
+    await update.message.reply_text("⏳ Creating your payment address...")
+
+    from payments.nowpayments import create_payment
+    from config import SUBSCRIPTION_PRICE_USD
+
+    payment = await create_payment(user_id, price_usd=SUBSCRIPTION_PRICE_USD)
+    if not payment:
+        await update.message.reply_text(
+            "⚠️ Payment system is temporarily unavailable. Please try again in a few minutes."
+        )
+        return
+
+    try:
+        db.save_payment(
+            telegram_id=user_id,
+            nowpayments_id=payment["payment_id"],
+            payment_address=payment["pay_address"],
+            pay_amount=payment["pay_amount"],
+            price_amount=SUBSCRIPTION_PRICE_USD,
+        )
+    except Exception as exc:
+        logger.error("Failed to save payment for user %s: %s", user_id, exc)
+
+    await update.message.reply_text(
+        format_subscribe_info(payment),
+        parse_mode=ParseMode.HTML,
+    )
 
 
 # ---- admin commands ---------------------------------------------------
@@ -270,16 +344,48 @@ async def broadcast_daily(application: Application, force: bool = False) -> None
     logger.info("[broadcast] Broadcast complete")
 
 
+async def cmd_admin_grant(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Admin: /admin_grant <telegram_id> [days] — grant free subscription."""
+    user_id = update.effective_user.id
+    if not ADMIN_TELEGRAM_ID or user_id != ADMIN_TELEGRAM_ID:
+        return
+
+    args = context.args
+    if not args:
+        await update.message.reply_text("Usage: /admin_grant <telegram_id> [days]")
+        return
+    try:
+        target_id = int(args[0])
+        days = int(args[1]) if len(args) > 1 else 30
+    except ValueError:
+        await update.message.reply_text("Invalid arguments. Usage: /admin_grant <telegram_id> [days]")
+        return
+
+    try:
+        db.upsert_user(target_id, subscribed=True)
+        new_expiry = db.activate_subscription(target_id, days=days)
+        await update.message.reply_text(
+            f"✅ Granted {days}-day subscription to user <code>{target_id}</code>\n"
+            f"Expires: <b>{new_expiry.strftime('%B %d, %Y')}</b>",
+            parse_mode=ParseMode.HTML,
+        )
+    except Exception as exc:
+        logger.error("admin_grant failed for %s: %s", target_id, exc)
+        await update.message.reply_text(f"Error: {exc}")
+
+
 # ---- app factory ------------------------------------------------------
 
 def build_application() -> Application:
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help", cmd_help))
+    app.add_handler(CommandHandler("subscribe", cmd_subscribe))
     app.add_handler(CommandHandler("brief", cmd_brief))
     app.add_handler(CommandHandler("sentiment", cmd_sentiment))
     app.add_handler(CommandHandler("ideas", cmd_ideas))
     app.add_handler(CommandHandler("language", cmd_language))
     app.add_handler(CommandHandler("admin_stats", cmd_admin_stats))
+    app.add_handler(CommandHandler("admin_grant", cmd_admin_grant))
     app.add_handler(CallbackQueryHandler(callback_language, pattern="^lang_"))
     return app

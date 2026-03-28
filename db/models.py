@@ -7,6 +7,18 @@ class User(BaseModel):
     telegram_id: int
     subscribed: bool = True
     language: str = "en"
+    subscription_expires_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+
+
+class Payment(BaseModel):
+    id: Optional[int] = None
+    telegram_id: int
+    nowpayments_id: Optional[str] = None
+    payment_address: str
+    pay_amount: float
+    price_amount: float = 19.0
+    status: str = "waiting"   # waiting / confirming / confirmed / finished / failed / expired
     created_at: Optional[datetime] = None
 
 
@@ -130,4 +142,23 @@ class Idea(BaseModel):
 #     translated  TEXT NOT NULL,
 #     created_at  TIMESTAMPTZ DEFAULT NOW()
 # );
+#
+# ---- Subscription & payments (run once) --------------------------------
+#
+# ALTER TABLE users
+#     ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMPTZ;
+#
+# CREATE TABLE IF NOT EXISTS payments (
+#     id                BIGSERIAL PRIMARY KEY,
+#     telegram_id       BIGINT NOT NULL REFERENCES users(telegram_id),
+#     nowpayments_id    TEXT UNIQUE,
+#     payment_address   TEXT NOT NULL,
+#     pay_amount        NUMERIC NOT NULL,
+#     price_amount      NUMERIC NOT NULL DEFAULT 19,
+#     status            TEXT DEFAULT 'waiting',
+#     created_at        TIMESTAMPTZ DEFAULT NOW()
+# );
+#
+# CREATE INDEX IF NOT EXISTS payments_telegram_id_idx ON payments(telegram_id);
+# CREATE INDEX IF NOT EXISTS payments_nowpayments_id_idx ON payments(nowpayments_id);
 # -----------------------------------------------------------------------

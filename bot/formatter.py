@@ -53,12 +53,14 @@ def format_welcome() -> str:
         "I provide daily AI-powered macro analysis covering:\n"
         "💱 EUR/USD • 🥇 Gold • 🛢️ Brent • 📊 S&amp;P 500 • ₿ BTC\n\n"
         "<b>Commands:</b>\n"
-        "/brief — Today's macro brief\n"
-        "/sentiment — Live sentiment for all 5 assets\n"
-        "/ideas — Today's 3 trading ideas\n"
+        "/subscribe — Get access for <b>$19/month</b> (USDT TRC20) 💳\n"
+        "/brief — Today's macro brief 🔒\n"
+        "/sentiment — Live sentiment for all 5 assets 🔒\n"
+        "/ideas — Today's 3 trading ideas 🔒\n"
         "/language — Choose your language 🌐\n"
         "/help — Show this help message\n\n"
-        "📅 Broadcast Mon–Fri at 18:05 UTC (GMT)"
+        "🔒 = requires active subscription\n"
+        "📅 Broadcast Mon–Fri at 18:05 UTC"
     )
 
 
@@ -67,14 +69,16 @@ def format_welcome() -> str:
 def format_help() -> str:
     return (
         "📖 <b>Available Commands</b>\n\n"
-        "/start — Welcome message &amp; subscription info\n"
-        "/brief — Today's daily macro brief (400-500 words)\n"
-        "/sentiment — Sentiment cards for all 5 assets\n"
-        "/ideas — Today's 3 trading ideas with entry/SL/TP\n"
+        "/subscribe — Activate $19/month subscription (USDT TRC20) 💳\n"
+        "/start — Welcome message\n"
+        "/brief — Today's daily macro brief 🔒\n"
+        "/sentiment — Sentiment cards for all 5 assets 🔒\n"
+        "/ideas — Today's 3 trading ideas with entry/SL/TP 🔒\n"
         "/language — Choose your language 🌐\n"
         "/help — This help message\n\n"
+        "🔒 = requires active subscription\n\n"
         "⏰ <b>Schedule (Mon–Fri, UTC)</b>\n"
-        "• 07:00 / 13:00 / 18:00 — Sentiment update\n"
+        "• 12:00 / 18:00 — Sentiment update\n"
         "• 18:02 — Daily macro brief generated\n"
         "• 18:04 — Trading ideas generated\n"
         "• 18:05 — Brief &amp; ideas delivered to subscribers\n\n"
@@ -204,6 +208,34 @@ def format_admin_stats(stats: dict) -> str:
 
     lines.append("\n📊 <i>Charts attached below</i>")
     return "\n".join(lines)
+
+
+# ---- Subscription messages --------------------------------------------
+
+def format_subscribe_required() -> str:
+    return (
+        "🔒 <b>Subscription required</b>\n\n"
+        "This feature is available to paying subscribers only.\n\n"
+        "💳 <b>Monthly plan: $19/month</b> (USDT TRC20)\n\n"
+        "Use /subscribe to get access."
+    )
+
+
+def format_subscribe_info(payment: dict) -> str:
+    pay_amount = payment["pay_amount"]
+    pay_address = payment["pay_address"]
+    payment_id = payment["payment_id"]
+    return (
+        "💳 <b>Subscribe — $19/month</b>\n\n"
+        f"Send exactly <code>{pay_amount} USDT</code> (TRC20 network) to:\n\n"
+        f"<code>{pay_address}</code>\n\n"
+        "⚠️ <b>Important:</b>\n"
+        "• Send the exact USDT amount shown above\n"
+        "• Use <b>TRC20 network only</b> (not ERC20, BEP20)\n"
+        f"• Payment reference: <code>{payment_id}</code>\n\n"
+        "✅ Your subscription will activate automatically within ~10 minutes after payment is confirmed.\n\n"
+        "<i>Access period: 30 days from activation</i>"
+    )
 
 
 # ---- Utility ----------------------------------------------------------

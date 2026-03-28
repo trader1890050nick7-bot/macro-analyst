@@ -40,17 +40,112 @@ def get_subscribed_users() -> list[int]:
 
 
 def get_subscribed_users_with_language() -> list[tuple[int, str]]:
+    """Return (telegram_id, language) for users with an active paid subscription."""
+    now_iso = datetime.now(timezone.utc).isoformat()
     response = (
         get_client()
         .table("users")
         .select("telegram_id, language")
-        .eq("subscribed", True)
+        .gt("subscription_expires_at", now_iso)
         .execute()
     )
     return [
         (row["telegram_id"], row.get("language") or "en")
         for row in (response.data or [])
     ]
+
+
+# ---- subscriptions ----------------------------------------------------
+
+def is_premium(telegram_id: int) -> bool:
+    """Return True if user has an active paid subscription."""
+    response = (
+        get_client()
+        .table("users")
+        .select("subscription_expires_at")
+        .eq("telegram_id", telegram_id)
+        .limit(1)
+        .execute()
+    )
+    if not response.data:
+        return False
+    raw = response.data[0].get("subscription_expires_at")
+    if not raw:
+        return False
+    expires = datetime.fromisoformat(raw)
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    return expires > datetime.now(timezone.utc)
+
+
+def get_subscription_expiry(telegram_id: int) -> Optional[datetime]:
+    """Return subscription expiry datetime, or None if not subscribed."""
+    response = (
+        get_client()
+        .table("users")
+        .select("subscription_expires_at")
+        .eq("telegram_id", telegram_id)
+        .limit(1)
+        .execute()
+    )
+    if not response.data:
+        return None
+    raw = response.data[0].get("subscription_expires_at")
+    if not raw:
+        return None
+    dt = datetime.fromisoformat(raw)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def activate_subscription(telegram_id: int, days: int = 30) -> datetime:
+    """Extend or activate subscription by `days`. Returns new expiry datetime."""
+    now = datetime.now(timezone.utc)
+    current = get_subscription_expiry(telegram_id)
+    base = current if (current and current > now) else now
+    new_expiry = base + timedelta(days=days)
+    get_client().table("users").update(
+        {"subscription_expires_at": new_expiry.isoformat()}
+    ).eq("telegram_id", telegram_id).execute()
+    return new_expiry
+
+
+# ---- payments ---------------------------------------------------------
+
+def save_payment(
+    telegram_id: int,
+    nowpayments_id: str,
+    payment_address: str,
+    pay_amount: float,
+    price_amount: float = 19.0,
+) -> None:
+    get_client().table("payments").insert({
+        "telegram_id": telegram_id,
+        "nowpayments_id": nowpayments_id,
+        "payment_address": payment_address,
+        "pay_amount": pay_amount,
+        "price_amount": price_amount,
+        "status": "waiting",
+    }).execute()
+
+
+def get_payment_by_nowpayments_id(nowpayments_id: str) -> Optional[dict]:
+    response = (
+        get_client()
+        .table("payments")
+        .select("*")
+        .eq("nowpayments_id", nowpayments_id)
+        .limit(1)
+        .execute()
+    )
+    return response.data[0] if response.data else None
+
+
+def update_payment_status(nowpayments_id: str, status: str) -> None:
+    get_client().table("payments").update({"status": status}).eq(
+        "nowpayments_id", nowpayments_id
+    ).execute()
 
 
 def get_user_language(telegram_id: int) -> str:
