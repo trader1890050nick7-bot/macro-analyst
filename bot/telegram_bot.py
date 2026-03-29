@@ -93,13 +93,17 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
     try:
         db.upsert_user(user_id, subscribed=True)
-        logger.info("User %s subscribed", user_id)
+        logger.info("User %s started bot", user_id)
     except Exception as exc:
         logger.error("Failed to upsert user %s: %s", user_id, exc)
 
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("💳 Подписаться — $19/месяц", callback_data="subscribe")],
+    ])
     await update.message.reply_text(
         format_welcome(),
         parse_mode=ParseMode.HTML,
+        reply_markup=keyboard,
     )
 
 
@@ -156,6 +160,15 @@ async def cmd_language(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     )
 
 
+async def callback_subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+    # Remove the inline button and run the subscribe flow
+    await query.edit_message_reply_markup(reply_markup=None)
+    # Reuse cmd_subscribe logic via a fake Update-like call
+    await cmd_subscribe(update, context)
+
+
 async def callback_language(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
@@ -178,6 +191,8 @@ async def callback_language(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 async def cmd_subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
+    msg = update.effective_message  # works for both /subscribe and inline button callback
+
     try:
         db.upsert_user(user_id, subscribed=True)
     except Exception as exc:
@@ -188,23 +203,23 @@ async def cmd_subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     expiry = db.get_subscription_expiry(user_id)
     if expiry and expiry > datetime.now(timezone.utc):
         days_left = (expiry - datetime.now(timezone.utc)).days
-        await update.message.reply_text(
-            f"✅ <b>You already have an active subscription!</b>\n\n"
-            f"Expires: <b>{expiry.strftime('%B %d, %Y')}</b> ({days_left} days left)\n\n"
-            f"To extend for another 30 days, make another payment using /subscribe.",
+        await msg.reply_text(
+            f"✅ <b>Подписка уже активна!</b>\n\n"
+            f"Действует до: <b>{expiry.strftime('%d.%m.%Y')}</b> (осталось {days_left} дн.)\n\n"
+            f"Чтобы продлить ещё на 30 дней — просто сделай новый платёж через /subscribe.",
             parse_mode=ParseMode.HTML,
         )
         return
 
-    await update.message.reply_text("⏳ Creating your payment address...")
+    await msg.reply_text("⏳ Создаю адрес для оплаты...")
 
     from payments.nowpayments import create_payment
     from config import SUBSCRIPTION_PRICE_USD
 
     payment = await create_payment(user_id, price_usd=SUBSCRIPTION_PRICE_USD)
     if not payment:
-        await update.message.reply_text(
-            "⚠️ Payment system is temporarily unavailable. Please try again in a few minutes."
+        await msg.reply_text(
+            "⚠️ Платёжная система временно недоступна. Попробуй через несколько минут."
         )
         return
 
@@ -219,7 +234,7 @@ async def cmd_subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     except Exception as exc:
         logger.error("Failed to save payment for user %s: %s", user_id, exc)
 
-    await update.message.reply_text(
+    await msg.reply_text(
         format_subscribe_info(payment),
         parse_mode=ParseMode.HTML,
     )
@@ -387,5 +402,6 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("language", cmd_language))
     app.add_handler(CommandHandler("admin_stats", cmd_admin_stats))
     app.add_handler(CommandHandler("admin_grant", cmd_admin_grant))
+    app.add_handler(CallbackQueryHandler(callback_subscribe, pattern="^subscribe$"))
     app.add_handler(CallbackQueryHandler(callback_language, pattern="^lang_"))
     return app

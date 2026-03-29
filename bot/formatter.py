@@ -49,18 +49,16 @@ def _h(text: str) -> str:
 
 def format_welcome() -> str:
     return (
-        "👋 <b>Welcome to Macro Market Analyst Bot!</b>\n\n"
-        "I provide daily AI-powered macro analysis covering:\n"
-        "💱 EUR/USD • 🥇 Gold • 🛢️ Brent • 📊 S&amp;P 500 • ₿ BTC\n\n"
-        "<b>Commands:</b>\n"
-        "/subscribe — Get access for <b>$19/month</b> (USDT TRC20) 💳\n"
-        "/brief — Today's macro brief 🔒\n"
-        "/sentiment — Live sentiment for all 5 assets 🔒\n"
-        "/ideas — Today's 3 trading ideas 🔒\n"
-        "/language — Choose your language 🌐\n"
-        "/help — Show this help message\n\n"
-        "🔒 = requires active subscription\n"
-        "📅 Broadcast Mon–Fri at 18:05 UTC"
+        "👋 <b>Привет! Это Macro Market Analyst — твой AI-аналитик финансовых рынков.</b>\n\n"
+        "Каждый будний день в 18:05 UTC ты получаешь:\n\n"
+        "📰 <b>Макро-бриф</b> — что произошло на рынках сегодня и почему\n"
+        "💡 <b>3 торговые идеи</b> — конкретные точки входа, стоп-лосс и тейк-профит\n"
+        "📡 <b>Сентимент</b> — настроение рынка по 5 активам в реальном времени\n\n"
+        "<b>Активы:</b> 💱 EUR/USD • 🥇 Золото • 🛢 Brent • 📊 S&amp;P 500 • ₿ BTC\n\n"
+        "─────────────────────\n"
+        "💳 <b>Доступ — $19 в месяц</b> (оплата в USDT TRC20)\n"
+        "─────────────────────\n\n"
+        "Нажми кнопку ниже чтобы получить адрес для оплаты 👇"
     )
 
 
