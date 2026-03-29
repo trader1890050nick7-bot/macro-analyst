@@ -142,7 +142,7 @@ def format_idea(idea: Idea) -> str:
 
 def format_all_ideas(ideas: list[Idea]) -> list[str]:
     if not ideas:
-        return ["⚠️ No trading ideas available yet. Check back after 07:30 UTC."]
+        return ["⚠️ No trading ideas available yet. Trading ideas are generated Mon–Fri at 18:04 UTC. On weekends the previous ideas are shown."]
 
     header = "💡 <b>Today's Trading Ideas</b>\n\n"
     cards = [f"<b>Idea {i + 1}</b>\n{format_idea(idea)}" for i, idea in enumerate(ideas)]

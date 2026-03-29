@@ -554,7 +554,11 @@ def save_cached_translation(cache_key: str, translated: str) -> None:
 
 
 def get_latest_ideas() -> list[Idea]:
-    """Return today's trading ideas (up to 3)."""
+    """Return today's trading ideas (up to 3).
+
+    On weekends or if today has no ideas yet, falls back to the most recent
+    available ideas from any previous day.
+    """
     start_of_day = datetime.now(timezone.utc).replace(
         hour=0, minute=0, second=0, microsecond=0
     )
@@ -567,4 +571,16 @@ def get_latest_ideas() -> list[Idea]:
         .limit(3)
         .execute()
     )
-    return [Idea(**row) for row in (response.data or [])]
+    if response.data:
+        return [Idea(**row) for row in response.data]
+
+    # Fallback: return the most recent ideas regardless of date (e.g. weekends)
+    fallback = (
+        get_client()
+        .table("ideas")
+        .select("*")
+        .order("created_at", desc=True)
+        .limit(3)
+        .execute()
+    )
+    return [Idea(**row) for row in (fallback.data or [])]

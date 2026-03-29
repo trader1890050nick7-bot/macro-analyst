@@ -121,7 +121,7 @@ async def cmd_brief(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     brief = db.get_latest_brief()
     if not brief:
         await update.message.reply_text(
-            "⚠️ No brief available yet. Briefs are generated weekdays at 18:45 UTC.",
+            "⚠️ No brief available yet. Briefs are generated Mon–Fri at 18:02 UTC.",
         )
         return
 
